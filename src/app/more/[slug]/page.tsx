@@ -48,13 +48,16 @@ export default function MoreProductPage() {
     "mobile-app-development": "mobile",
   };
 
-  const label = (t.footer.serviceLabels as any)[slugToKey[slug]];
+  const label = (t.footer?.serviceLabels as Record<string, string> | undefined)?.[slugToKey[slug]] ?? slug;
+  const overlay = t.updatingOverlay ?? {};
+  const message = overlay.message ?? "Currently Updating";
+  const subtext = overlay.subtext ?? "We're improving this page. Please check back soon.";
 
   return (
     <UpdatingOverlay
       title={label}
-      message={t.updatingOverlay.message}
-      subtext={t.updatingOverlay.subtext}
+      message={message}
+      subtext={subtext}
       showBackLink
     />
   );

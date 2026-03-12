@@ -19,6 +19,8 @@ export const translations = {
       ecommerce: 'E-commerce Development',
       mobileApps: 'Mobile App Development',
       call: '(0-605) 21705',
+      privacyPolicy: 'Privacy Policy',
+      termsConditions: 'Terms & Conditions',
       beyondSeoDropdown: {
         ai: {
           title: 'Artificial Intelligence',
@@ -359,6 +361,10 @@ export const translations = {
         ecommerce: 'E-commerce Development',
         mobile: 'Mobile App Development'
       }
+    },
+    updatingOverlay: {
+      message: 'Currently Updating',
+      subtext: "We're improving this page. Please check back soon."
     }
   },
   lt: {
@@ -379,6 +385,8 @@ export const translations = {
       ecommerce: 'E-komercijos sprendimai',
       mobileApps: 'Mobiliosios programėlės',
       call: '(8-605) 21705',
+      privacyPolicy: 'Privatumo politika',
+      termsConditions: 'Taisyklės ir sąlygos',
       beyondSeoDropdown: {
         ai: {
           title: 'Dirbtinis intelektas',
@@ -719,6 +727,10 @@ export const translations = {
         ecommerce: 'E-komercijos sprendimai',
         mobile: 'Mobiliosios programėlės'
       }
+    },
+    updatingOverlay: {
+      message: 'Atnaujinama',
+      subtext: 'Tobuliname šį puslapį. Sugrįžkite vėliau.'
     }
   }
 };

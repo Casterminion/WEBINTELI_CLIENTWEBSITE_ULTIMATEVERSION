@@ -112,8 +112,8 @@ const Footerdemo: React.FC = () => {
                 { label: t.process.tag, href: '/#process' },
                 { label: t.faq.tag, href: '/#questions' },
                 { label: t.pricing.tag, href: '/#pricing' },
-                { label: t.nav.privacy, href: '/privacy' },
-                { label: t.nav.terms, href: '/terms' }
+                { label: t.nav.privacyPolicy, href: '/privacy' },
+                { label: t.nav.termsConditions, href: '/terms' }
               ].map((item, idx) => (
                 <li key={idx}>
                   <Link href={item.href} className="text-muted-foreground hover:text-foreground transition-colors duration-300 flex items-center group">
