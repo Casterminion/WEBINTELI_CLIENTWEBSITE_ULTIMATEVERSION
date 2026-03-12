@@ -237,9 +237,110 @@ export const translations = {
         button: 'Check My Eligibility'
       }
     },
-    updatingOverlay: {
-      message: 'Currently Updating',
-      subtext: 'We\'re improving this page. Please check back soon.'
+    legalPage: {
+      title: 'Legal',
+      intro: 'Legal information for Webinteli. Please review our policies below.',
+      contact: 'For further legal information, contact us at'
+    },
+    privacyPage: {
+      title: 'Privacy Policy',
+      updated: 'Last updated: December 1, 2025',
+      intro: 'This privacy policy explains how webinteli ("We", "Our", "Company") collects, processes, and protects your personal data. We comply with:',
+      compliance: [
+        'EU GDPR (Regulation 2016/679)',
+        'ePrivacy Directive',
+        'Lithuanian Republic Law on Legal Protection of Personal Data',
+        'International Data Transfer Rules',
+        'AI Sector Best Practices'
+      ],
+      agree: 'By using our website and services, you agree to this policy.',
+      sections: {
+        controller: { title: '1. Data Controller', address: 'Address: Kaunas', email: 'Email:', phone: 'Phone: +370 605 21705' },
+        collect: {
+          title: '2. What Personal Data We Collect',
+          intro: 'We only collect data necessary for providing services, fulfilling legal obligations, and website operation.',
+          provideTitle: '2.1. Data you provide',
+          provideItems: ['First name, last name', 'Email', 'Phone number', 'Company name and details', 'Inquiry / consultation content', 'Information provided in projects'],
+          autoTitle: '2.2. Automatically collected data',
+          autoItems: ['IP address', 'Device type', 'Browser information', 'Access logs', 'Cookies', 'Usage events (event logs)'],
+          aiTitle: '2.3. AI and automation data',
+          aiIntro: 'When using our AI agents, voice systems, automation, or document analysis, you may provide:',
+          aiItems: ['Conversation text', 'Voice recordings (if voice technology is used)', 'Documents for analysis (PDF, DOCX, etc.)', 'Structured data from integrations', 'CRM records', 'Emails / tasks (if integrated)'],
+          aiImportant: 'Important: We never use your data to train AI models unless you explicitly consent in writing.'
+        },
+        purposes: {
+          title: '3. Data Processing Purposes and Legal Basis',
+          groundsIntro: 'Data processing grounds according to GDPR:',
+          grounds: ['Consent — GDPR 6(1)(a)', 'Contract performance — GDPR 6(1)(b)', 'Legitimate interest — GDPR 6(1)(f)', 'Legal obligations compliance — GDPR 6(1)(c)'],
+          purposesIntro: 'Data usage purposes:',
+          purposes: ['Providing consultations', 'AI systems development and maintenance', 'Project execution', 'Customer relationship management', 'System security assurance', 'Market analysis and service improvement', 'Accounting and legal obligations', 'Marketing communication (only with consent)']
+        },
+        retention: {
+          title: '4. Data Retention Period',
+          items: ['Inquiries: 24 months', 'AI logs: max. 30 days, unless otherwise agreed', 'CRM data: according to contract', 'Financial data: 10 years (according to Lithuanian law)', 'Cookies: according to cookie type (see cookie policy)'],
+          outro: 'After the retention period, data is deleted or anonymized.'
+        },
+        storage: {
+          title: '5. Data Storage and Server Location',
+          intro: 'Our data infrastructure is mixed, designed for high security.',
+          euTitle: '5.1. EU / EEA servers (primary location)',
+          euIntro: 'Data is stored in:',
+          euItems: ['Supabase (EU data centers)', 'PostgreSQL EU regions', 'European cloud service providers'],
+          euCompliance: '✔ All EU servers are 100% GDPR compliant.',
+          usTitle: '5.2. US servers (when using AI or cloud infrastructure)',
+          usIntro: 'When using AI provider services, data may be processed in the US:',
+          usItems: ['OpenAI (Azure OpenAI or API regions)', 'Anthropic', 'Google Cloud', 'AWS', 'Azure', 'Meta LLaMA API'],
+          usMeasuresIntro: 'The following legal protection measures apply:',
+          usMeasures: ['SCC (Standard Contractual Clauses)', 'Data pseudonymization', 'Data minimization', 'Option to use EU regional models (if client requests)', 'Encrypted data transmission (TLS 1.2+)', 'Data not used for training']
+        },
+        rights: {
+          title: '8. Your Rights Under GDPR',
+          intro: 'You have the right to:',
+          items: ['Access your data (Art. 15)', 'Rectify data (Art. 16)', 'Erasure ("right to be forgotten") (Art. 17)', 'Restrict processing (Art. 18)', 'Data portability (Art. 20)', 'Object to processing (Art. 21)', 'Withdraw consent at any time', 'Lodge a complaint with the DPA (Art. 77)'],
+          outro: 'Requests should be sent via email: data@webinteli.lt',
+          response: 'We respond within 30 days.'
+        },
+        security: {
+          title: '9. Data Security',
+          intro: 'We implement high-level security:',
+          items: ['✔ Encryption (HTTPS, TLS)', '✔ Access controls', '✔ Security audits', '✔ Data minimization', '✔ User authentication', '✔ Isolated databases', '✔ Backup policy']
+        },
+        cookies: {
+          title: 'Cookie Policy',
+          fullVersion: 'Full version',
+          whatTitle: '1. What are cookies',
+          whatIntro: 'Cookies are small text files stored in your browser.',
+          typesTitle: '2. Cookie types',
+          types: {
+            essential: { title: '2.1. Essential cookies', desc: 'Enable the website to function.' },
+            analytics: { title: '2.2. Analytics cookies', desc: 'Used to collect statistics (Google Analytics, etc.).' },
+            functional: { title: '2.3. Functional cookies', desc: 'Save preferences.' },
+            marketing: { title: '2.4. Marketing cookies', desc: 'Google Ads, Meta Pixel, TikTok Pixel. Only used with your explicit consent.' }
+          },
+          managementTitle: '3. Cookie Management',
+          managementIntro: 'You can:',
+          managementItems: ['Grant / withdraw consent via cookie banner', 'Delete cookies in your browser', 'Block cookies in browser settings'],
+          thirdPartyTitle: '4. Third-Party Cookies',
+          thirdPartyIntro: 'Third parties may set their own cookies. Their policies may differ.',
+          updatesTitle: '5. Cookie Policy Updates',
+          updatesIntro: 'Will be updated according to technology and legal changes.'
+        },
+        contact: { title: 'Contact', intro: 'For privacy-related questions or requests, contact us at' }
+      }
+    },
+    termsPage: {
+      title: 'Terms of Service',
+      updated: 'Last updated: 2026',
+      sections: {
+        agreement: { title: 'SERVICE AGREEMENT', text: 'This agreement is made between you (the client) and Webinteli (hereinafter "we", "us" or "our"). By agreeing to this document, you agree to the following terms.' },
+        offer: { title: 'Our Offer', text: 'We will optimize your Google Business Profile with the goal of achieving a top 3 ranking in Google Maps for your target area [Location] and your main keyword within 90 days.' },
+        scope: { title: 'Scope of Services', items: ['Complete Google Business Profile audit and optimization', 'Optional website build with SEO', 'Building a strategic review generation system', 'Weekly post planning including content strategy', 'Competitive analysis and clear positioning in the local market', 'Weekly ranking reports and progress updates', 'Ongoing support, optimization and adjustments throughout the 90 days'] },
+        need: { title: 'What we need from you', text: 'We need access to your Google Business Profile and your website. Of course, we will notify you before making any major changes. Once payment is completed, we will send you detailed instructions on how to provide us with secure access to everything we need.' },
+        guarantee: { title: 'GUARANTEE', text: 'Should you not achieve a top 3/first page ranking (whichever package applies) in Google Maps for your main keyword in your target area within 90 days, we will stop your billing period until we have reached that goal. From that point onwards, billing will continue starting from the next billing cycle.' },
+        exclusivity: { title: 'EXCLUSIVITY', text: 'During our collaboration, we commit to not serving any other businesses from your industry in the same target area.' },
+        nextSteps: { title: 'NEXT STEPS', intro: 'After agreement and signing, you will receive an invoice with the above-mentioned price.', paymentIntro: 'Payment possible via:', paymentMethods: ['Bank transfer / SEPA', 'PayPal / Apple Pay', 'All major credit cards'], onboarding: 'Within 24 hours after payment receipt, you will receive an onboarding email with all further steps. The 90-day period begins as soon as we receive access to the previously mentioned items.' },
+        contact: { intro: 'For questions about these Terms of Service, contact us at' }
+      }
     },
     footer: {
       tagline: 'Dominate Your Local Market with cutting-edge AI and technology solutions.',
@@ -496,9 +597,110 @@ export const translations = {
         button: 'Patikrinti mano tinkamumą'
       }
     },
-    updatingOverlay: {
-      message: 'Šiuo metu atnaujinama',
-      subtext: 'Mes tobuliname šį puslapį. Prašome sugrįžti vėliau.'
+    legalPage: {
+      title: 'Teisinė informacija',
+      intro: 'Webinteli teisinė informacija. Peržiūrėkite mūsų taisykles žemiau.',
+      contact: 'Dėl papildomos teisinės informacijos kreipkitės'
+    },
+    privacyPage: {
+      title: 'Privatumo politika',
+      updated: 'Paskutinį kartą atnaujinta: 2025 m. gruodžio 1 d.',
+      intro: 'Ši privatumo politika paaiškina, kaip webinteli („Mes“, „Mūsų“, „Įmonė“) renka, tvarko ir saugo jūsų asmens duomenis. Mes laikomės:',
+      compliance: [
+        'ES BDAR (Reglamentas 2016/679)',
+        'e-privatumo direktyvos',
+        'Lietuvos Respublikos asmens duomenų teisinės apsaugos įstatymo',
+        'Tarptautinių duomenų perdavimo taisyklių',
+        'Geriausios AI sektoriaus praktikos'
+      ],
+      agree: 'Naudodamiesi mūsų svetaine ir paslaugomis, jūs sutinkate su šia politika.',
+      sections: {
+        controller: { title: '1. Duomenų valdytojas', address: 'Adresas: Kaunas', email: 'El. paštas:', phone: 'Telefonas: +370 605 21705' },
+        collect: {
+          title: '2. Kokius asmens duomenis renkame',
+          intro: 'Mes renkame tik tuos duomenis, kurie yra būtini paslaugoms teikti, teisiniams įsipareigojimams vykdyti ir svetainės veikimui užtikrinti.',
+          provideTitle: '2.1. Duomenys, kuriuos pateikiate jūs',
+          provideItems: ['Vardas, pavardė', 'El. pašto adresas', 'Telefono numeris', 'Įmonės pavadinimas ir rekvizitai', 'Užklausos / konsultacijos turinys', 'Projektų metu pateikta informacija'],
+          autoTitle: '2.2. Automatiškai renkami duomenys',
+          autoItems: ['IP adresas', 'Įrenginio tipas', 'Naršyklės informacija', 'Prisijungimo žurnalai (logs)', 'Slapukai', 'Naudojimo įvykiai (event logs)'],
+          aiTitle: '2.3. AI ir automatizavimo duomenys',
+          aiIntro: 'Naudodamiesi mūsų AI agentais, balso sistemomis, automatizavimu ar dokumentų analize, galite pateikti:',
+          aiItems: ['Pokalbių tekstą', 'Balso įrašus (jei naudojama balso technologija)', 'Dokumentus analizei (PDF, DOCX ir kt.)', 'Struktūrizuotus duomenis iš integracijų', 'CRM įrašus', 'El. laiškus / užduotis (jei integruota)'],
+          aiImportant: 'Svarbu: Mes niekada nenaudojame jūsų duomenų AI modelių mokymui, nebent jūs duodate aiškų rašytinį sutikimą.'
+        },
+        purposes: {
+          title: '3. Duomenų tvarkymo tikslai ir teisinis pagrindas',
+          groundsIntro: 'Duomenų tvarkymo pagrindai pagal BDAR:',
+          grounds: ['Sutikimas — BDAR 6(1)(a)', 'Sutarties vykdymas — BDAR 6(1)(b)', 'Teisėtas interesas — BDAR 6(1)(f)', 'Teisinių prievolių vykdymas — BDAR 6(1)(c)'],
+          purposesIntro: 'Duomenų naudojimo tikslai:',
+          purposes: ['Konsultacijų teikimas', 'AI sistemų kūrimas ir palaikymas', 'Projektų vykdymas', 'Ryšių su klientais valdymas', 'Sistemos saugumo užtikrinimas', 'Rinkos analizė ir paslaugų tobulinimas', 'Apskaitos ir teisinės prievolės', 'Rinkodaros komunikacija (tik su sutikimu)']
+        },
+        retention: {
+          title: '4. Duomenų saugojimo laikotarpis',
+          items: ['Užklausos: 24 mėnesiai', 'AI žurnalai: maks. 30 dienų, nebent sutarta kitaip', 'CRM duomenys: pagal sutartį', 'Finansiniai duomenys: 10 metų (pagal Lietuvos įstatymus)', 'Slapukai: pagal slapuko tipą (žr. slapukų politiką)'],
+          outro: 'Pasibaigus saugojimo laikotarpiui, duomenys ištrinami arba nuasmeninami.'
+        },
+        storage: {
+          title: '5. Duomenų saugojimas ir serverių vieta',
+          intro: 'Mūsų duomenų infrastruktūra yra mišri, sukurta siekiant aukšto saugumo.',
+          euTitle: '5.1. ES / EEE serveriai (pagrindinė vieta)',
+          euIntro: 'Duomenys saugomi:',
+          euItems: ['Supabase (ES duomenų centrai)', 'PostgreSQL ES regionai', 'Europos debijos paslaugų teikėjai'],
+          euCompliance: '✔ Visi ES serveriai 100% atitinka BDAR.',
+          usTitle: '5.2. JAV serveriai (naudojant AI ar debesijos infrastruktūrą)',
+          usIntro: 'Naudojant AI paslaugų teikėjų paslaugas, duomenys gali būti tvarkomi JAV:',
+          usItems: ['OpenAI (Azure OpenAI arba API regionai)', 'Anthropic', 'Google Cloud', 'AWS', 'Azure', 'Meta LLaMA API'],
+          usMeasuresIntro: 'Taikomos šios teisinės apsaugos priemonės:',
+          usMeasures: ['SCC (Standartinės sutarties sąlygos)', 'Duomenų pseudonimizavimas', 'Duomenų minimizavimas', 'Galimybė naudoti ES regioninius modelius (klientui pageidaujant)', 'Šifruotas duomenų perdavimas (TLS 1.2+)', 'Duomenys nenaudojami mokymui']
+        },
+        rights: {
+          title: '8. Jūsų teisės pagal BDAR',
+          intro: 'Jūs turite teisę:',
+          items: ['Susipažinti su duomenimis (15 str.)', 'Ištaisyti duomenis (16 str.)', 'Ištrinti duomenis („teisė būti pamirštam“) (17 str.)', 'Apriboti tvarkymą (18 str.)', 'Perkelti duomenis (20 str.)', 'Nesutikti su tvarkymu (21 str.)', 'Bet kada atšaukti sutikimą', 'Pateikti skundą Valstybinei duomenų apsaugos inspekcijai (77 str.)'],
+          outro: 'Prašymus siųskite el. paštu: data@webinteli.lt',
+          response: 'Atsakome per 30 dienų.'
+        },
+        security: {
+          title: '9. Duomenų saugumas',
+          intro: 'Mes diegiame aukšto lygio saugumą:',
+          items: ['✔ Šifravimas (HTTPS, TLS)', '✔ Prieigos kontrolė', '✔ Saugumo auditai', '✔ Duomenų minimizavimas', '✔ Vartotojų autentifikavimas', '✔ Izoliuotos duomenų bazės', '✔ Atsarginių kopijų politika']
+        },
+        cookies: {
+          title: 'Slapukų politika',
+          fullVersion: 'Pilna versija',
+          whatTitle: '1. Kas yra slapukai',
+          whatIntro: 'Slapukai yra maži tekstiniai failai, saugomi jūsų naršyklėje.',
+          typesTitle: '2. Slapukų tipai',
+          types: {
+            essential: { title: '2.1. Būtinieji slapukai', desc: 'Leidžia svetainei tinkamai veikti.' },
+            analytics: { title: '2.2. Analitiniai slapukai', desc: 'Naudojami statistikai rinkti (Google Analytics ir kt.).' },
+            functional: { title: '2.3. Funkciniai slapukai', desc: 'Išsaugo pasirinkimus.' },
+            marketing: { title: '2.4. Rinkodaros slapukai', desc: 'Google Ads, Meta Pixel, TikTok Pixel. Naudojami tik su jūsų aiškiu sutikimu.' }
+          },
+          managementTitle: '3. Slapukų valdymas',
+          managementIntro: 'Jūs galite:',
+          managementItems: ['Suteikti / atšaukti sutikimą per slapukų juostą', 'Ištrinti slapukus savo naršyklėje', 'Blokuoti slapukus naršyklės nustatymuose'],
+          thirdPartyTitle: '4. Trečiųjų šalių slapukai',
+          thirdPartyIntro: 'Trečiosios šalys gali nustatyti savo slapukus. Jų politika gali skirtis.',
+          updatesTitle: '5. Slapukų politikos atnaujinimai',
+          updatesIntro: 'Bus atnaujinama atsižvelgiant į technologijų ir teisinius pokyčius.'
+        },
+        contact: { title: 'Kontaktai', intro: 'Klausimais dėl privatumo ar prašymais kreipkitės' }
+      }
+    },
+    termsPage: {
+      title: 'Paslaugų teikimo sąlygos',
+      updated: 'Paskutinį kartą atnaujinta: 2026 m.',
+      sections: {
+        agreement: { title: 'PASLAUGŲ SUTARTIS', text: 'Ši sutartis sudaroma tarp jūsų (kliento) ir Webinteli (toliau – „mes“, „mus“ arba „mūsų“). Sutikdami su šiuo dokumentu, jūs sutinkate su šiomis sąlygomis.' },
+        offer: { title: 'Mūsų pasiūlymas', text: 'Mes optimizuosime jūsų „Google Business“ profilį, siekdami per 90 dienų pasiekti Top 3 poziciją „Google Maps“ jūsų tikslinėje vietovėje [Location] pagal pagrindinį raktažodį.' },
+        scope: { title: 'Paslaugų apimtis', items: ['Pilnas „Google Business“ profilio auditas ir optimizavimas', 'Pasirinktinis svetainės kūrimas su SEO', 'Strateginės atsiliepimų generavimo sistemos kūrimas', 'Savaitinis įrašų planavimas, įskaitant turinio strategiją', 'Konkurencinė analizė ir aiškus pozicionavimas vietinėje rinkoje', 'Savaitinės pozicijų ataskaitos ir pažangos atnaujinimai', 'Nuolatinis palaikymas, optimizavimas ir koregavimas per 90 dienų laikotarpį'] },
+        need: { title: 'Ko mums reikia iš jūsų', text: 'Mums reikės prieigos prie jūsų „Google Business“ profilio ir svetainės. Žinoma, apie visus esminius pakeitimus jus informuosime. Atlikę mokėjimą, gausite išsamias instrukcijas, kaip saugiai suteikti mums reikiamą prieigą.' },
+        guarantee: { title: 'GARANTIJA', text: 'Jei per 90 dienų nepasieksite Top 3 / pirmojo puslapio pozicijos (priklausomai nuo pasirinkto paketo) „Google Maps“ pagal pagrindinį raktažodį, mes sustabdysime sąskaitų išrašymą, kol šis tikslas bus pasiektas. Nuo to momento sąskaitos bus išrašomos kitam atsiskaitymo ciklui.' },
+        exclusivity: { title: 'IŠSKIRTINUMAS', text: 'Mūsų bendradarbiavimo metu mes įsipareigojame neaptarnauti jokio kito jūsų srities verslo toje pačioje tikslinėje vietovėje.' },
+        nextSteps: { title: 'TOLESNI ŽINGSNIAI', intro: 'Po sutikimo ir pasirašymo gausite sąskaitą faktūrą su aukščiau nurodyta kaina.', paymentIntro: 'Apmokėjimas galimas per:', paymentMethods: ['Banko pavedimą / SEPA', 'PayPal / Apple Pay', 'Visas pagrindines kredito korteles'], onboarding: 'Per 24 valandas po apmokėjimo gausite el. laišką su visais tolesniais žingsniais. 90 dienų laikotarpis prasideda, kai gauname prieigą prie anksčiau nurodytų paskyrų.' },
+        contact: { intro: 'Klausimais dėl šių sąlygų kreipkitės' }
+      }
     },
     footer: {
       tagline: 'Dominuokite savo vietinėje rinkoje naudodami pažangiausius AI ir technologijų sprendimus.',
