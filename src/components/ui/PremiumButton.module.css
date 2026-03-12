@@ -1,0 +1,50 @@
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 15px 45px;
+  border-radius: 30px;
+  transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  overflow: hidden;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.button:hover {
+  padding-right: 55px;
+}
+
+.text {
+  position: relative;
+  z-index: 10;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.iconWrapper {
+  position: absolute;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.primary {
+  background-color: var(--accent);
+  color: #000;
+}
+
+.secondary, .outline-black {
+  border: 1px solid #000;
+  color: #000;
+}
+
+.white {
+  color: #fff;
+}

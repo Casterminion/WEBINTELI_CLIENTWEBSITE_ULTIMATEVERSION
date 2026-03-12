@@ -1,0 +1,25 @@
+.main {
+  overflow-x: hidden;
+}
+
+.services {
+  background: #fff;
+  padding: 6rem 0;
+}
+
+.servicesHeader {
+  text-align: center;
+  margin-bottom: 6rem;
+}
+
+.sectionTitle {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  margin-bottom: 1.5rem;
+}
+
+.sectionSubtitle {
+  max-width: 800px;
+  margin: 0 auto;
+  font-size: 1.25rem;
+  opacity: 0.6;
+}

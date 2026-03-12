@@ -1,0 +1,429 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9999;
+  transition: background 0.35s ease, color 0.35s ease, padding 0.35s ease, box-shadow 0.35s ease;
+  padding: 1rem 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Light section below: white navbar, dark text */
+.scrolled {
+  padding: 0.75rem 0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.inner {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #fff;
+  flex-shrink: 0;
+  transition: color 0.35s ease;
+}
+
+.scrolled .logo {
+  color: #111;
+}
+
+.scrolled .logo:hover {
+  color: #333;
+}
+
+.logo:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.nav {
+  display: none;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .nav {
+    display: flex;
+  }
+}
+
+.navLink {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.85);
+  transition: color 0.25s ease, opacity 0.25s ease;
+}
+
+.navLink:hover {
+  color: #fff;
+}
+
+.scrolled .navLink {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.scrolled .navLink:hover {
+  color: #000;
+}
+
+/* Dropdown */
+.dropdown {
+  position: relative;
+}
+
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.85);
+  transition: color 0.25s ease;
+}
+
+.dropdownTrigger:hover {
+  color: #fff;
+}
+
+.dropdownTrigger:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.scrolled .dropdownTrigger:focus-visible {
+  outline-color: rgba(0, 0, 0, 0.4);
+}
+
+.scrolled .dropdownTrigger {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.scrolled .dropdownTrigger:hover {
+  color: #000;
+}
+
+.dropdownChevron {
+  transition: transform 0.2s ease;
+}
+
+.dropdownOpen .dropdownChevron {
+  transform: rotate(180deg);
+}
+
+/* Services dropdown - premium grouped design */
+.servicesMenu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(0.5rem);
+  min-width: 280px;
+  padding: 1rem 0;
+  background: rgba(18, 18, 20, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+}
+
+.scrolled .servicesMenu {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.02) inset;
+}
+
+.servicesMenu.servicesMenuOpen {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0.35rem);
+}
+
+.servicesGroup {
+  padding: 0 0.5rem;
+}
+
+.servicesGroup:not(:last-child) {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.scrolled .servicesGroup:not(:last-child) {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.servicesGroupTitle {
+  display: block;
+  padding: 0 0.75rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+.scrolled .servicesGroupTitle {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.servicesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.servicesLink {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.servicesLink:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.servicesLink:focus {
+  outline: none;
+}
+
+.servicesLink:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.scrolled .servicesLink {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.scrolled .servicesLink:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #000;
+}
+
+.scrolled .servicesLink:focus-visible {
+  background: rgba(0, 0, 0, 0.06);
+  color: #000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 767px) {
+  .servicesMenu {
+    min-width: 260px;
+    max-width: calc(100vw - 2rem);
+    left: 50%;
+  }
+}
+
+.callButton {
+  display: none;
+  padding: 0.5rem 1rem;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.callButton:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.02);
+}
+
+.scrolled .callButton {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.scrolled .callButton:hover {
+  background: #333;
+  border-color: #333;
+}
+
+@media (min-width: 768px) {
+  .callButton {
+    display: inline-block;
+  }
+}
+
+/* Language dropdown */
+.langSwitch {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.langTrigger {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.langTrigger:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.scrolled .langTrigger {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.scrolled .langTrigger:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.langFlag {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.langTrigger .langFlag[data-locale="lt"] {
+  font-size: 1.6em;
+  line-height: 1;
+}
+
+.langTrigger .langFlag[data-locale="en"] {
+  font-size: 1em;
+  line-height: 1;
+}
+
+
+.langChevron {
+  transition: transform 0.2s ease;
+}
+
+.langChevronOpen {
+  transform: rotate(180deg);
+}
+
+.langMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  transform: translateY(0.5rem);
+  min-width: 140px;
+  padding: 1rem 0;
+  background: rgba(18, 18, 20, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+}
+
+.scrolled .langMenu {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.02) inset;
+}
+
+.langMenu.langMenuOpen {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0.35rem);
+}
+
+.langItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  text-align: left;
+}
+
+.langItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.scrolled .langItem {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.scrolled .langItem:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #000;
+}
+
+.mobileMenu {
+  display: block;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.scrolled .mobileMenu {
+  color: #111;
+}
+
+@media (min-width: 768px) {
+  .mobileMenu {
+    display: none;
+  }
+}

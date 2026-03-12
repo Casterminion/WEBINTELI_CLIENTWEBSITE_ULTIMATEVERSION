@@ -1,0 +1,82 @@
+.section {
+  padding: 8rem 0;
+  background: var(--neutral-soft);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4rem;
+}
+
+@media (min-width: 992px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: 2rem;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  opacity: 0.6;
+  margin-bottom: 3rem;
+  max-width: 500px;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.infoItem span {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0.4;
+  margin-bottom: 0.5rem;
+}
+
+.infoItem a {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.form {
+  background: #fff;
+  padding: 3rem;
+  border-radius: 30px;
+  box-shadow: var(--shadow-premium);
+}
+
+.inputGroup {
+  margin-bottom: 1.5rem;
+}
+
+.inputGroup input, .inputGroup textarea {
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--neutral-border);
+  border-radius: 15px;
+  background: var(--neutral-soft);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.inputGroup input:focus, .inputGroup textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.submitBtn {
+  width: 100%;
+  justify-content: center;
+}

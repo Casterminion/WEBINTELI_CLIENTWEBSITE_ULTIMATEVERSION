@@ -1,0 +1,120 @@
+.section {
+  padding: 8rem 0;
+  background-color: var(--background);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.tag {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: clamp(28px, 4.5vw, 42px);
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.faqList {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.faqItem {
+  background: #ededed;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.faqItem.open {
+  background: #ededed;
+}
+
+.questionBtn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #ededed;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  min-height: 72px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.faqItem.open .questionBtn {
+  background: #3d3d3d;
+  border-color: #3d3d3d;
+}
+
+.questionText {
+  flex: 1;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #000;
+  padding: 1rem 1.25rem;
+  line-height: 1.35;
+}
+
+.faqItem.open .questionText {
+  color: #fff;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  margin: 1rem 1rem 1rem 0;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #ededed;
+  color: #000;
+  transition: transform 0.25s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.icon svg {
+  display: block;
+}
+
+.faqItem.open .icon {
+  background: #fff;
+  border-color: #ededed;
+  color: #000;
+  transform: rotate(45deg);
+}
+
+.answerWrapper {
+  overflow: hidden;
+}
+
+.answerInner {
+  padding: 1rem 1.25rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #000;
+  opacity: 0.7;
+  border-radius: 0 0 12px 12px;
+}
+
+.faqItem.open .answerInner {
+  padding-top: 0.5rem;
+}

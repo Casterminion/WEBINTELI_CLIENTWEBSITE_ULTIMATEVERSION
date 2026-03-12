@@ -1,0 +1,58 @@
+.section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #000;
+  color: #fff;
+  padding: 6rem 0;
+}
+
+.videoBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.content {
+  text-align: center;
+}
+
+.title {
+  font-size: clamp(30px, 6vw, 54px);
+  margin-bottom: 4rem;
+}
+
+.points {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+.point {
+  font-size: clamp(18px, 5vw, 34px);
+  font-weight: 100;
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.3;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+}

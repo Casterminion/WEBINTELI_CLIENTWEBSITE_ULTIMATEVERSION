@@ -1,0 +1,192 @@
+.section {
+  padding: 4rem 0;
+  background-color: var(--background);
+  overflow-x: hidden;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.tag {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: clamp(26px, 4vw, 40px);
+}
+
+.sectionWrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 56px 64px;
+  background: #f8f9fb;
+  border-radius: 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.grid > * {
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 0;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.07);
+}
+
+.cardHeader {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.pkgLabel {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.pkgName {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+  color: var(--accent);
+}
+
+.pkgPrice {
+  font-size: clamp(1.5rem, 3.5vw, 1.875rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #111;
+  letter-spacing: -0.02em;
+}
+
+.subPrice {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.guaranteeLine {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: 0.75rem 0 0;
+}
+
+.featureList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  flex: 1;
+  min-height: 0;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: #374151;
+}
+
+.checkIcon {
+  width: 18px;
+  height: 18px;
+  color: #059669;
+  flex-shrink: 0;
+}
+
+.trustNote {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  line-height: 1.45;
+  margin: 1.25rem 0 0;
+  padding-top: 0;
+  flex-shrink: 0;
+}
+
+.cardFooter {
+  padding-top: 1.25rem;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.fullBtn {
+  width: 100%;
+  justify-content: center;
+  padding: 0.6rem 1rem !important;
+  font-size: 0.9rem !important;
+  min-height: 38px;
+}
+
+.callBtn {
+  display: block;
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: #6b7280;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+
+.callBtn:hover {
+  color: #374151;
+}
+
+@media (max-width: 639px) {
+  .sectionWrapper {
+    padding: 40px 24px;
+  }
+}
