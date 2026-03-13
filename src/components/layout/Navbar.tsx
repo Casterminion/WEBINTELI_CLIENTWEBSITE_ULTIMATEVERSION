@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Locale } from '@/contexts/LanguageContext';
@@ -17,6 +18,11 @@ const LANG_OPTIONS: { locale: Locale; label: string }[] = [
 ];
 
 const Navbar: React.FC = () => {
+  const pathname = usePathname();
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+
   const { scrollY } = useScroll();
   const [isScrolled, setIsScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);

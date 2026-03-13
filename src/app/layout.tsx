@@ -25,6 +25,7 @@ export const metadata: Metadata = {
   description: "Aukščiausios kokybės interneto svetainių kūrimas, SEO optimizacija ir AI automatizacijos sprendimai.",
   manifest: "/site.webmanifest",
   appleWebApp: { title: "Webinteli" },
+  themeColor: "#0b1120",
   icons: {
     icon: [
       { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },

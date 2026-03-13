@@ -125,6 +125,10 @@ const Contact: React.FC = () => {
             <PremiumButton type="submit" className={styles.submitBtn}>
               {t.intake.form.button}
             </PremiumButton>
+            <p className={styles.formPrivacyNotice}>
+              {t.intake.form.privacyAgreePrefix}
+              <Link href="/privacy">{t.nav.privacyPolicy}</Link>.
+            </p>
             <Link href="/#pricing" className={styles.backLink}>
               {t.intake.back}
             </Link>

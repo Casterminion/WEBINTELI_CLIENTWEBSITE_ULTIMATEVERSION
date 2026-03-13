@@ -87,6 +87,17 @@
   box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.08);
 }
 
+/* Honeypot: hidden from users, not tabbable */
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .formError {
   font-size: 0.875rem;
   color: #b91c1c;
@@ -122,6 +133,23 @@
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+}
+
+.formPrivacyNotice {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #6b7280;
+  margin: 0.75rem 0 0;
+}
+
+.formPrivacyNotice a {
+  color: #374151;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.formPrivacyNotice a:hover {
+  color: #111;
 }
 
 /* Card column */

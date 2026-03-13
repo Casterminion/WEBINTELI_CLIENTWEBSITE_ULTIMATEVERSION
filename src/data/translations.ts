@@ -236,13 +236,23 @@ export const translations = {
         nameLabel: 'Your Full Name',
         namePlaceholder: 'John Doe',
         emailLabel: 'Email',
-        emailPlaceholder: 'you@example.com',
+        emailPlaceholder: 'name@example.com',
         cityLabel: 'City & Borough (if applicable)',
-        cityPlaceholder: 'Vilnius, Senamiestis',
+        cityPlaceholder: 'London, SW1A 1AA',
         industryLabel: 'Industry',
         industryPlaceholder: 'Locksmith, roofer, construction company, car detailing, etc....',
         button: 'Check My Eligibility',
-        errorMessage: 'Something went wrong. Please try again.'
+        errorMessage: 'Something went wrong. Please try again.',
+        rateLimitMessage: 'Too many submissions. Please try again in a few minutes.',
+        validationErrors: {
+          name_length: 'Name must be between 2 and 100 characters.',
+          email_invalid: 'Please enter a valid email address (5–255 characters).',
+          city_length: 'City must be between 2 and 200 characters.',
+          industry_length: 'Industry must be between 2 and 200 characters.',
+          package_invalid: 'Invalid package. Please go back and choose a package again.',
+          invalid_request: 'Invalid request. Please try again.'
+        },
+        privacyAgreePrefix: 'By submitting this form you agree to our '
       },
       confirmation: {
         title: 'Request received',
@@ -624,13 +634,23 @@ export const translations = {
         nameLabel: 'Jūsų vardas ir pavardė',
         namePlaceholder: 'Vardenis Pavardenis',
         emailLabel: 'El. paštas',
-        emailPlaceholder: 'jusu@pastas.lt',
+        emailPlaceholder: 'Jūsų@paštas.lt',
         cityLabel: 'Miestas ir rajonas (jei taikoma)',
         cityPlaceholder: 'Vilnius, Senamiestis',
         industryLabel: 'Veiklos sritis',
         industryPlaceholder: 'Santechnikas, stogdengys, statybos įmonė, automobilių švara ir kt.',
         button: 'Patikrinti mano tinkamumą',
-        errorMessage: 'Kažkas nutiko. Bandykite dar kartą.'
+        errorMessage: 'Kažkas nutiko. Bandykite dar kartą.',
+        rateLimitMessage: 'Per daug pateikimų. Pabandykite dar kartą po kelių minučių.',
+        validationErrors: {
+          name_length: 'Vardas turi būti nuo 2 iki 100 simbolių.',
+          email_invalid: 'Įveskite tinkamą el. pašto adresą (5–255 simbolių).',
+          city_length: 'Miestas turi būti nuo 2 iki 200 simbolių.',
+          industry_length: 'Veiklos sritis turi būti nuo 2 iki 200 simbolių.',
+          package_invalid: 'Neteisingas paketas. Grįžkite ir pasirinkite paketą iš naujo.',
+          invalid_request: 'Neteisinga užklausa. Bandykite dar kartą.'
+        },
+        privacyAgreePrefix: 'Pateikdami šią formą, sutinkate su mūsų '
       },
       confirmation: {
         title: 'Užklausa gauta',

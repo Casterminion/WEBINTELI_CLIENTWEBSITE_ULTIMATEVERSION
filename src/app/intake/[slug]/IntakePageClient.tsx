@@ -5,9 +5,29 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPackageBySlug } from '@/data/packages';
-import { supabase } from '@/lib/supabase';
 import styles from './IntakePage.module.css';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type ValidationCode = 'name_length' | 'email_invalid' | 'city_length' | 'industry_length';
+
+function validateForm(data: {
+  name: string;
+  email: string;
+  city: string;
+  industry: string;
+}): ValidationCode | null {
+  const name = data.name.trim();
+  const email = data.email.trim();
+  const city = data.city.trim();
+  const industry = data.industry.trim();
+  if (name.length < 2 || name.length > 100) return 'name_length';
+  if (email.length < 5 || email.length > 255 || !EMAIL_REGEX.test(email)) return 'email_invalid';
+  if (city.length < 2 || city.length > 200) return 'city_length';
+  if (industry.length < 2 || industry.length > 200) return 'industry_length';
+  return null;
+}
 
 type ResolvedParams = { slug?: string | string[] };
 
@@ -28,6 +48,8 @@ export default function IntakePageClient({ params }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const honeypotRef = useRef<HTMLInputElement>(null);
+  const formOpenedAtRef = useRef<string | null>(null);
 
   if (!rawPkg) {
     notFound();
@@ -42,22 +64,70 @@ export default function IntakePageClient({ params }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
-    setIsSubmitting(true);
-    const { error } = await supabase.from('intake_submissions').insert({
-      name: formData.name,
-      email: formData.email,
-      city: formData.city,
-      industry: formData.industry,
-      package_slug: pkg.slug,
-    });
-    setIsSubmitting(false);
-    if (error) {
-      setSubmitError(t.intake.form.errorMessage);
+
+    const validationErr = validateForm(formData);
+    if (validationErr) {
+      const errors = t.intake.form.validationErrors as Record<string, string> | undefined;
+      setSubmitError(errors?.[validationErr] ?? t.intake.form.errorMessage);
       return;
     }
-    setShowConfirmation(true);
-    setFormData({ name: '', email: '', city: '', industry: '' });
+
+    setIsSubmitting(true);
+    const packagePriceDisplay = pkg.priceSub
+      ? `${pkg.price} ${pkg.priceSub}`.trim()
+      : pkg.price;
+
+    const body = {
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      city: formData.city.trim(),
+      industry: formData.industry.trim(),
+      package_slug: pkg.slug,
+      service: 'SEO',
+      package_price_display: packagePriceDisplay,
+      website: honeypotRef.current?.value ?? '',
+      form_opened_at: formOpenedAtRef.current ?? undefined,
+    };
+
+    try {
+      const res = await fetch('/api/intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        setShowConfirmation(true);
+        setFormData({ name: '', email: '', city: '', industry: '' });
+        return;
+      }
+
+      if (res.status === 429) {
+        setSubmitError(t.intake.form.rateLimitMessage);
+        return;
+      }
+
+      const errors = t.intake.form.validationErrors as Record<string, string> | undefined;
+      const message =
+        typeof data.code === 'string' && errors?.[data.code]
+          ? errors[data.code]
+          : typeof data.message === 'string'
+            ? data.message
+            : t.intake.form.errorMessage;
+      setSubmitError(message);
+    } catch {
+      setSubmitError(t.intake.form.errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    if (!formOpenedAtRef.current) {
+      formOpenedAtRef.current = new Date().toISOString();
+    }
+  }, []);
 
   useEffect(() => {
     if (!showConfirmation) return;
@@ -127,6 +197,15 @@ export default function IntakePageClient({ params }: Props) {
               {t.intake.intro}
             </p>
             <form onSubmit={handleSubmit} className={styles.form}>
+              <input
+                ref={honeypotRef}
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                className={styles.honeypot}
+                aria-hidden
+              />
               <label className={styles.label}>
                 {t.intake.form.nameLabel}
                 <input
@@ -187,6 +266,10 @@ export default function IntakePageClient({ params }: Props) {
               >
                 {isSubmitting ? '...' : t.intake.form.button}
               </button>
+              <p className={styles.formPrivacyNotice}>
+                {t.intake.form.privacyAgreePrefix}
+                <Link href="/privacy">{t.nav.privacyPolicy}</Link>.
+              </p>
             </form>
           </div>
 
