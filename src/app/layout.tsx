@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { Outfit, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import CookieBanner from "@/components/layout/CookieBanner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { PHONE_TEL } from "@/lib/phone";
+
+const CookieBanner = dynamic(
+  () => import("@/components/layout/CookieBanner"),
+  { ssr: false }
+);
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -54,6 +59,14 @@ export default function RootLayout({
 
   return (
     <html lang="lt" suppressHydrationWarning className={`${outfit.variable} ${ibmPlexMono.variable}`}>
+      <head>
+        <link
+          rel="preload"
+          href="/wp-content/uploads/2024/11/background.mp4"
+          as="video"
+          type="video/mp4"
+        />
+      </head>
       <body>
         <script
           type="application/ld+json"

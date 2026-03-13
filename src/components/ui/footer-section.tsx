@@ -68,6 +68,7 @@ const Footerdemo: React.FC = () => {
                         href={social.href} 
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label={social.label}
                         className="flex h-10 w-10 items-center justify-center rounded-xl border border-foreground/10 bg-background/90 text-muted-foreground shadow-sm transition-transform duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:ring-offset-2"
                       >
                         <social.icon className="h-[18px] w-[18px]" />
@@ -83,7 +84,7 @@ const Footerdemo: React.FC = () => {
           </div>
 
           <div>
-            <h4 className="text-lg font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">{t.footer.services}</h4>
+            <h3 className="text-lg font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">{t.footer.services}</h3>
             <ul className="space-y-4">
               {[
                 { label: t.footer.serviceLabels.chat, href: "/more/ai-chat-agents" },
@@ -127,7 +128,7 @@ const Footerdemo: React.FC = () => {
           </div>
 
           <div>
-            <h4 className="text-lg font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">{t.footer.contact}</h4>
+            <h3 className="text-lg font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">{t.footer.contact}</h3>
             <ul className="space-y-4">
               <li className="text-muted-foreground flex items-center">
                 <MapPin className="w-5 h-5 mr-2 text-primary/60" />

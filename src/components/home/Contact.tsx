@@ -22,7 +22,7 @@ const Contact: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Contact SEO form submit', formData);
+    // Form submit handler – no client-side logging in production (Lighthouse best practices)
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
