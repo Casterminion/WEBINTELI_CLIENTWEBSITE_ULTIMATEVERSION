@@ -185,8 +185,97 @@
   color: #374151;
 }
 
+/* ========== Mobile only: do not change desktop ========== */
 @media (max-width: 639px) {
+  .section {
+    padding: 2.5rem 0;
+  }
+
+  .header {
+    margin-bottom: 1.75rem;
+  }
+
+  .tag {
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .title {
+    font-size: clamp(22px, 6vw, 28px);
+  }
+
   .sectionWrapper {
-    padding: 40px 24px;
+    padding: 1.5rem 1rem;
+    border-radius: 16px;
+    box-sizing: border-box;
+  }
+
+  .grid {
+    gap: 1.25rem;
+  }
+
+  .card {
+    padding: 1.5rem 1.25rem;
+    border-radius: 14px;
+  }
+
+  .cardHeader {
+    margin-bottom: 1.25rem;
+  }
+
+  .pkgLabel {
+    font-size: 0.625rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .pkgPrice {
+    font-size: clamp(1.35rem, 5vw, 1.6rem);
+  }
+
+  .subPrice {
+    font-size: 0.8rem;
+  }
+
+  .guaranteeLine {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+  }
+
+  .featureList {
+    gap: 0.5rem;
+  }
+
+  .featureItem {
+    font-size: 0.875rem;
+  }
+
+  .checkIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .trustNote {
+    font-size: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .cardFooter {
+    padding-top: 1rem;
+    gap: 0.5rem;
+  }
+
+  .fullBtn {
+    min-height: 44px;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  .callBtn {
+    padding: 0.6rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }

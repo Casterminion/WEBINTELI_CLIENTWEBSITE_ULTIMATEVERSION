@@ -162,4 +162,68 @@
   pointer-events: auto;
 }
 
+/* ========== Mobile only: do not change desktop ========== */
+@media (max-width: 767px) {
+  .overlay .content {
+    padding: 1rem;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .backLink {
+    top: 1rem;
+    left: 1rem;
+    right: auto;
+    font-size: 0.7rem;
+    padding: 0.6rem 1rem;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .titleWrapper {
+    margin-bottom: 1.5rem;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+  }
+
+  .mainTitle {
+    font-size: clamp(1.5rem, 6vw, 2.25rem);
+    line-height: 1.2;
+    text-align: center;
+    word-break: break-word;
+    padding: 0 0.25rem;
+  }
+
+  .titleUnderline {
+    margin-top: 1rem;
+    width: 40px;
+  }
+
+  .textWrap {
+    min-height: 1.5rem;
+    padding: 0 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .subtext {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    line-height: 1.5;
+    padding: 0 0.5rem;
+  }
+
+  .statusIndicator {
+    bottom: 1.25rem;
+    right: 1rem;
+    left: 1rem;
+    justify-content: center;
+    font-size: 0.65rem;
+  }
+}
+
 
