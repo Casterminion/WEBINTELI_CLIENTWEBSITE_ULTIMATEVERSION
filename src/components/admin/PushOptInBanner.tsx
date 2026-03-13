@@ -66,7 +66,7 @@ export default function PushOptInBanner() {
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(applicationServerKeyBase64),
+        applicationServerKey: urlBase64ToUint8Array(applicationServerKeyBase64) as unknown as ArrayBuffer,
       });
 
       await fetch("/api/push/subscribe", {
