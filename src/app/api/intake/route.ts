@@ -89,18 +89,19 @@ function validateBody(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const b = body as Record<string, unknown>;
     const ip = getClientIp(request);
 
     // Honeypot: silent fail for bots
-    const website = typeof (body as Record<string, unknown>).website === 'string'
-      ? (body as Record<string, unknown>).website.trim()
+    const website = typeof b.website === 'string'
+      ? b.website.trim()
       : '';
     if (website.length > 0) {
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
     // Time-based bot check
-    const formOpenedAt = (body as Record<string, unknown>).form_opened_at;
+    const formOpenedAt = b.form_opened_at;
     if (typeof formOpenedAt === 'string') {
       const opened = Date.parse(formOpenedAt);
       if (!Number.isNaN(opened) && Date.now() - opened < MIN_FORM_TIME_MS) {
