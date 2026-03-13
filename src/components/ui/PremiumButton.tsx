@@ -11,6 +11,7 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'white' | 'outline-black';
   className?: string;
   iconDirection?: 'down' | 'right';
+  type?: 'button' | 'submit' | 'reset';
 }
 
 const PremiumButton: React.FC<ButtonProps> = ({ 
@@ -18,7 +19,8 @@ const PremiumButton: React.FC<ButtonProps> = ({
   href, 
   variant = 'primary', 
   className = '',
-  iconDirection = 'right'
+  iconDirection = 'right',
+  type = 'button'
 }) => {
   const variantClass = styles[variant];
 
@@ -58,7 +60,7 @@ const PremiumButton: React.FC<ButtonProps> = ({
   }
 
   return (
-    <button className={fullClassName}>
+    <button type={type} className={fullClassName}>
       {Content}
     </button>
   );

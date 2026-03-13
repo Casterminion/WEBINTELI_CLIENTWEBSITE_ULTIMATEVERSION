@@ -1,3 +1,5 @@
+"use client";
+
 import { motion } from "framer-motion";
 import FeatureSection from "@/components/home/FeatureSection";
 import { useLanguage } from "@/contexts/LanguageContext";

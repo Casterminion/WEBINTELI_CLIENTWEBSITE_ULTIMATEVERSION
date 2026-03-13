@@ -58,7 +58,7 @@ function CarouselItem({
   round: boolean;
   trackItemOffset: number;
   x: ReturnType<typeof useMotionValue<number>>;
-  transition: typeof SPRING_OPTIONS;
+  transition: typeof SPRING_OPTIONS | { duration: number };
 }) {
   const range = [-(index + 1) * trackItemOffset, -index * trackItemOffset, -(index - 1) * trackItemOffset];
   const outputRange = [90, 0, -90];

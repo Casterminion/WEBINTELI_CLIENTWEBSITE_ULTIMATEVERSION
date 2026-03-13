@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AdminLayoutClient } from "./AdminLayoutClient";
 
@@ -15,6 +16,10 @@ type Props = {
 };
 
 export default function AdminLayout({ children }: Props) {
-  return <AdminLayoutClient>{children}</AdminLayoutClient>;
+  return (
+    <Suspense>
+      <AdminLayoutClient>{children}</AdminLayoutClient>
+    </Suspense>
+  );
 }
 
