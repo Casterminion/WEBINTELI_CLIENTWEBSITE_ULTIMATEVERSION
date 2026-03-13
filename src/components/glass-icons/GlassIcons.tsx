@@ -27,7 +27,7 @@ export type GlassIconItem = {
 const DEFAULT_ITEMS: GlassIconItem[] = [
   { icon: <Globe size={ICON_SIZE} strokeWidth={1.8} />, color: 'blue', label: 'Web Development', href: '/more/web-development' },
   { icon: <ShoppingCart size={ICON_SIZE} strokeWidth={1.8} />, color: 'orange', label: 'E-commerce Development', href: '/more/e-commerce-development' },
-  { icon: <Bot size={ICON_SIZE} strokeWidth={1.8} />, color: 'purple', label: 'AI Chat Agents', href: '/more/ai-chat-agents' },
+  { icon: <Bot size={ICON_SIZE} strokeWidth={1.8} />, color: 'purple', label: 'DI Chat Agents', href: '/more/ai-chat-agents' },
   { icon: <Workflow size={ICON_SIZE} strokeWidth={1.8} />, color: 'green', label: 'Workflow Automation', href: '/more/workflow-automation' },
 ];
 

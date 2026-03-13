@@ -1,0 +1,27 @@
+# Webinteli
+
+> Premium website development, SEO optimization, and AI automation solutions. High-quality web design, AI agents (chat, voice, custom), workflow automation, and e-commerce.
+
+## Key pages
+
+- / — Home
+- /paslaugos — Services (Paslaugos)
+- /legal — Legal
+- /terms — Terms of service
+- /privacy — Privacy policy
+- /#kontaktai — Contact
+
+## Services (detailed)
+
+- /more/ai-chat-agents — AI chat agents
+- /more/ai-voice-agents — AI voice agents
+- /more/custom-ai-solutions — Custom AI solutions
+- /more/workflow-automation — Workflow automation
+- /more/business-process-automation — Business process automation
+- /more/web-development — Web development
+- /more/e-commerce-development — E-commerce development
+- /more/mobile-app-development — Mobile app development
+
+## Main topics
+
+Website creation, SEO, AI agents, automation, web development, e-commerce, mobile apps.

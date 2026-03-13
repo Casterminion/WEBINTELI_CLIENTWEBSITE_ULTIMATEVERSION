@@ -8,9 +8,9 @@ export const translations = {
       questions: 'Questions',
       pricing: 'Pricing',
       beyondSeo: 'Beyond SEO',
-      aiChatAgents: 'AI Chat Agents',
-      aiVoiceAgents: 'AI Voice Agents',
-      customAi: 'Custom AI Solutions',
+      aiChatAgents: 'DI Chat Agents',
+      aiVoiceAgents: 'DI Voice Agents',
+      customAi: 'Custom DI Solutions',
       automation: 'Automation',
       workflowAutomation: 'Workflow Automation',
       businessProcess: 'Business Process Automation',
@@ -24,9 +24,9 @@ export const translations = {
       beyondSeoDropdown: {
         ai: {
           title: 'Artificial Intelligence',
-          chat: 'AI Chat Agents',
-          voice: 'AI Voice Agents',
-          custom: 'Custom AI Solutions'
+          chat: 'DI Chat Agents',
+          voice: 'DI Voice Agents',
+          custom: 'Custom DI Solutions'
         },
         automation: {
           title: 'Automation',
@@ -115,7 +115,7 @@ export const translations = {
     pricing: {
       tag: 'Packages',
       title: 'Get more Clients',
-      trustNote: 'We only accept one business per industry in each location.',
+      trustNote: 'One company per industry & location.',
       callBtn: 'Call',
       getStartedBtn: 'Get Started',
       packages: {
@@ -187,6 +187,11 @@ export const translations = {
         }
       ]
     },
+    bottomCta: {
+      title: 'Ready to Dominate Your ',
+      titleHighlight: 'Local Market?',
+      button: "Let's Talk Results",
+    },
     contact: {
       title: 'Ready to Dominate Your Local Market?',
       highlight: 'Local Market?',
@@ -225,18 +230,24 @@ export const translations = {
     },
     intake: {
       title: 'Apply In 2 Minutes',
-      intro: 'Check if your business qualifies for exclusive local SEO in your city. We only work with one company per industry & location.',
+      intro: 'Check if your business qualifies for exclusive local SEO in your city.',
       back: 'Choose A Different Package',
       form: {
         nameLabel: 'Your Full Name',
         namePlaceholder: 'John Doe',
-        phoneLabel: 'Phone Number',
-        phonePlaceholder: '+370 600 00000',
+        emailLabel: 'Email',
+        emailPlaceholder: 'you@example.com',
         cityLabel: 'City & Borough (if applicable)',
         cityPlaceholder: 'Vilnius, Senamiestis',
         industryLabel: 'Industry',
         industryPlaceholder: 'Locksmith, roofer, construction company, car detailing, etc....',
-        button: 'Check My Eligibility'
+        button: 'Check My Eligibility',
+        errorMessage: 'Something went wrong. Please try again.'
+      },
+      confirmation: {
+        title: 'Request received',
+        message: "Thank you. We'll contact you soon.",
+        close: 'OK'
       }
     },
     legalPage: {
@@ -257,7 +268,7 @@ export const translations = {
       ],
       agree: 'By using our website and services, you agree to this policy.',
       sections: {
-        controller: { title: '1. Data Controller', address: 'Address: Kaunas', email: 'Email:', phone: 'Phone: +370 605 21705' },
+        controller: { title: '1. Data Controller', address: 'Address: Kaunas', email: 'Email:', phone: 'Phone: (0-605) 21705' },
         collect: {
           title: '2. What Personal Data We Collect',
           intro: 'We only collect data necessary for providing services, fulfilling legal obligations, and website operation.',
@@ -352,9 +363,9 @@ export const translations = {
       contact: 'Contact',
       rights: 'All rights reserved.',
       serviceLabels: {
-        chat: 'AI Chat Agents',
-        voice: 'AI Voice Agents',
-        custom: 'Custom AI Solutions',
+        chat: 'DI Chat Agents',
+        voice: 'DI Voice Agents',
+        custom: 'Custom DI Solutions',
         workflow: 'Workflow Automation',
         process: 'Business Process Automation',
         web: 'Web Development',
@@ -365,6 +376,17 @@ export const translations = {
     updatingOverlay: {
       message: 'Currently Updating',
       subtext: "We're improving this page. Please check back soon."
+    },
+    cookieBanner: {
+      message: 'We use essential cookies for site functionality and optional cookies for analytics and marketing. You can manage your preferences below.',
+      acceptAll: 'Accept all',
+      customize: 'Customize',
+      title: 'Cookie preferences',
+      essentialLabel: 'Essential',
+      alwaysActive: 'Always active',
+      savePreferences: 'Save preferences',
+      rejectOptional: 'Reject optional',
+      privacyLink: 'Full cookie policy'
     }
   },
   lt: {
@@ -374,9 +396,9 @@ export const translations = {
       questions: 'Klausimai',
       pricing: 'Kainos',
       beyondSeo: 'Daugiau nei SEO',
-      aiChatAgents: 'AI susirašinėjimo agentai',
-      aiVoiceAgents: 'AI balso agentai',
-      customAi: 'Individualūs AI sprendimai',
+      aiChatAgents: 'DI susirašinėjimo agentai',
+      aiVoiceAgents: 'DI balso agentai',
+      customAi: 'Individualūs DI sprendimai',
       automation: 'Automatizavimas',
       workflowAutomation: 'Procesų automatizavimas',
       businessProcess: 'Verslo procesų valdymas',
@@ -384,15 +406,15 @@ export const translations = {
       webDevelopment: 'Svetainių kūrimas',
       ecommerce: 'E-komercijos sprendimai',
       mobileApps: 'Mobiliosios programėlės',
-      call: '(8-605) 21705',
+      call: '(0-605) 21705',
       privacyPolicy: 'Privatumo politika',
       termsConditions: 'Taisyklės ir sąlygos',
       beyondSeoDropdown: {
         ai: {
           title: 'Dirbtinis intelektas',
-          chat: 'AI susirašinėjimo agentai',
-          voice: 'AI balso agentai',
-          custom: 'Individualūs AI sprendimai'
+          chat: 'DI susirašinėjimo agentai',
+          voice: 'DI balso agentai',
+          custom: 'Individualūs DI sprendimai'
         },
         automation: {
           title: 'Automatizavimas',
@@ -481,14 +503,14 @@ export const translations = {
     pricing: {
       tag: 'Paketai',
       title: 'Gaukite daugiau klientų',
-      trustNote: 'Mes priimame tik vieną verslą pagal veiklos sritį kiekvienoje vietovėje.',
+      trustNote: 'Viena įmonė vienoje veiklos srityje ir vietovėje.',
       callBtn: 'Skambinti',
       getStartedBtn: 'Pradėkime',
       packages: {
         minimum: {
           name: 'Minimum',
           price: '300 € / mėn.',
-          guarantee: 'Pirmoji Google puslapio pozicija per 90 dienų. Pinigų grąžinimo garantija netaikoma.',
+          guarantee: 'Pirmas puslapis Google per 90 dienų. Pinigų grąžinimo garantija netaikoma.',
           features: [
             "Išsami konkurentų analizė",
             'Ataskaitos kas dvi savaites',
@@ -553,6 +575,11 @@ export const translations = {
         }
       ]
     },
+    bottomCta: {
+      title: 'Pasiruošę dominuoti savo ',
+      titleHighlight: 'vietinėje rinkoje?',
+      button: 'Pasikalbėkime',
+    },
     contact: {
       title: 'Pasiruošę dominuoti savo vietinėje rinkoje?',
       highlight: 'vietinėje rinkoje?',
@@ -591,18 +618,24 @@ export const translations = {
     },
     intake: {
       title: 'Užpildykite užklausą per 2 minutes',
-      intro: 'Patikrinkite, ar jūsų verslas atitinka išskirtinio vietinio SEO reikalavimus jūsų mieste. Mes dirbame tik su viena įmone pagal veiklos sritį ir vietovę.',
+      intro: 'Patikrinkite, ar jūsų verslas atitinka išskirtinio vietinio SEO reikalavimus jūsų mieste.',
       back: 'Pasirinkti kitą paketą',
       form: {
         nameLabel: 'Jūsų vardas ir pavardė',
         namePlaceholder: 'Vardenis Pavardenis',
-        phoneLabel: 'Telefono numeris',
-        phonePlaceholder: '+370 600 00000',
+        emailLabel: 'El. paštas',
+        emailPlaceholder: 'jusu@pastas.lt',
         cityLabel: 'Miestas ir rajonas (jei taikoma)',
         cityPlaceholder: 'Vilnius, Senamiestis',
         industryLabel: 'Veiklos sritis',
         industryPlaceholder: 'Santechnikas, stogdengys, statybos įmonė, automobilių švara ir kt.',
-        button: 'Patikrinti mano tinkamumą'
+        button: 'Patikrinti mano tinkamumą',
+        errorMessage: 'Kažkas nutiko. Bandykite dar kartą.'
+      },
+      confirmation: {
+        title: 'Užklausa gauta',
+        message: 'Ačiū. Netrukus susisieksime su jumis.',
+        close: 'Gerai'
       }
     },
     legalPage: {
@@ -623,7 +656,7 @@ export const translations = {
       ],
       agree: 'Naudodamiesi mūsų svetaine ir paslaugomis, jūs sutinkate su šia politika.',
       sections: {
-        controller: { title: '1. Duomenų valdytojas', address: 'Adresas: Kaunas', email: 'El. paštas:', phone: 'Telefonas: +370 605 21705' },
+        controller: { title: '1. Duomenų valdytojas', address: 'Adresas: Kaunas', email: 'El. paštas:', phone: 'Telefonas: (0-605) 21705' },
         collect: {
           title: '2. Kokius asmens duomenis renkame',
           intro: 'Mes renkame tik tuos duomenis, kurie yra būtini paslaugoms teikti, teisiniams įsipareigojimams vykdyti ir svetainės veikimui užtikrinti.',
@@ -718,9 +751,9 @@ export const translations = {
       contact: 'Kontaktai',
       rights: 'Visos teisės saugomos.',
       serviceLabels: {
-        chat: 'AI susirašinėjimo agentai',
-        voice: 'AI balso agentai',
-        custom: 'Individualūs AI sprendimai',
+        chat: 'DI susirašinėjimo agentai',
+        voice: 'DI balso agentai',
+        custom: 'Individualūs DI sprendimai',
         workflow: 'Procesų automatizavimas',
         process: 'Verslo procesų valdymas',
         web: 'Svetainių kūrimas',
@@ -731,6 +764,17 @@ export const translations = {
     updatingOverlay: {
       message: 'Atnaujinama',
       subtext: 'Tobuliname šį puslapį. Sugrįžkite vėliau.'
+    },
+    cookieBanner: {
+      message: 'Svetainėje naudojame būtinus slapukus veikimui ir neprivalomus – analitikai bei rinkodarai. Nuostatas galite valdyti žemiau.',
+      acceptAll: 'Priimti viską',
+      customize: 'Tinkinti',
+      title: 'Slapukų nuostatos',
+      essentialLabel: 'Būtini',
+      alwaysActive: 'Visada aktyvūs',
+      savePreferences: 'Išsaugoti nuostatas',
+      rejectOptional: 'Atmesti neprivalomus',
+      privacyLink: 'Pilna slapukų politika'
     }
   }
 };

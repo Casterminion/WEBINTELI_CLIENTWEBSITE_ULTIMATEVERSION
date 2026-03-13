@@ -5,14 +5,15 @@ import Link from 'next/link';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Locale } from '@/contexts/LanguageContext';
+import { PHONE_DISPLAY, PHONE_TEL } from '@/lib/phone';
 import styles from './Navbar.module.css';
 
 type NavItem = { label: string; href: string };
 type DropdownGroup = { title: string; items: { label: string; href: string }[] };
 
-const LANG_OPTIONS: { locale: Locale; flag: string; label: string }[] = [
-  { locale: 'lt', flag: '🇱🇹', label: 'Lietuvių' },
-  { locale: 'en', flag: 'EN', label: 'English' },
+const LANG_OPTIONS: { locale: Locale; label: string }[] = [
+  { locale: 'lt', label: 'Lietuvių' },
+  { locale: 'en', label: 'English' },
 ];
 
 const Navbar: React.FC = () => {
@@ -148,9 +149,7 @@ const Navbar: React.FC = () => {
             aria-expanded={langOpen}
             aria-haspopup="true"
           >
-            <span className={styles.langFlag} data-locale={locale}>
-              {LANG_OPTIONS.find(o => o.locale === locale)?.flag ?? 'EN'}
-            </span>
+            {locale === 'lt' ? 'LT' : 'EN'}
             <svg className={`${styles.langChevron} ${langOpen ? styles.langChevronOpen : ''}`} width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden>
               <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -170,8 +169,8 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        <a href="tel:+37060521705" className={styles.callButton} aria-label="Call +370 605 21705">
-          (0-605) 21705
+        <a href={`tel:${PHONE_TEL}`} className={styles.callButton} aria-label={`Call ${PHONE_DISPLAY}`}>
+          {PHONE_DISPLAY}
         </a>
 
         <div className={styles.mobileMenu}>

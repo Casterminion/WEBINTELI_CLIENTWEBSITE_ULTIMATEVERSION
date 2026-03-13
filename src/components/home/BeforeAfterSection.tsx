@@ -29,7 +29,7 @@ const BeforeAfterSection: React.FC = () => {
   ];
 
   const metrics = activeTab === 'before' ? BEFORE_METRICS : AFTER_METRICS;
-  const companyAddress = locale === 'lt' ? 'Pavyzdinis adresas, Kaunas, Lietuva' : 'Example Address 12, 12101 NYC';
+  const companyAddress = locale === 'lt' ? 'Pavyzdinis adresas, Kaunas, Lietuva' : 'Example Address 12, London SW1A 1AA, UK';
 
   return (
     <section className={styles.section} id="before-after">

@@ -300,46 +300,39 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.25rem 0.5rem;
   background: none;
   border: none;
-  border-radius: 6px;
   cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-transform: uppercase;
   font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.9);
-  transition: background 0.2s ease, color 0.2s ease;
+  color: rgba(255, 255, 255, 0.85);
+  transition: color 0.25s ease;
 }
 
 .langTrigger:hover {
-  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.langTrigger:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.scrolled .langTrigger:focus-visible {
+  outline-color: rgba(0, 0, 0, 0.4);
 }
 
 .scrolled .langTrigger {
-  color: rgba(0, 0, 0, 0.85);
+  color: rgba(0, 0, 0, 0.7);
 }
 
 .scrolled .langTrigger:hover {
-  background: rgba(0, 0, 0, 0.06);
+  color: #000;
 }
-
-.langFlag {
-  font-size: 1em;
-  line-height: 1;
-}
-
-.langTrigger .langFlag[data-locale="lt"] {
-  font-size: 1.6em;
-  line-height: 1;
-}
-
-.langTrigger .langFlag[data-locale="en"] {
-  font-size: 1em;
-  line-height: 1;
-}
-
 
 .langChevron {
   transition: transform 0.2s ease;

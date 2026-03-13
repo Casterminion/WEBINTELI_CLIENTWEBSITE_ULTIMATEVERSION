@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getNativeCountryName } from '@/data/nativeCountryNames';
 import PremiumButton from '../ui/PremiumButton';
 import styles from './Hero.module.css';
 
@@ -16,11 +17,13 @@ const Hero: React.FC = () => {
     let cancelled = false;
     const fetchLocation = async () => {
       try {
-        const res = await fetch('https://ipapi.co/json/?fields=city,country_name');
+        const res = await fetch('https://ipapi.co/json/?fields=city,country_name,country_code');
         if (!res.ok) throw new Error('Geo fetch failed');
-        const data = await res.json() as { city?: string; country_name?: string };
+        const data = await res.json() as { city?: string; country_name?: string; country_code?: string };
         const city = data?.city ?? '';
-        const country = data?.country_name ?? '';
+        const countryEnglish = data?.country_name ?? '';
+        const countryCode = data?.country_code ?? '';
+        const country = getNativeCountryName(countryCode, countryEnglish);
         if (!cancelled && (city || country)) {
           setLocation([country, city].filter(Boolean).join(', '));
         }

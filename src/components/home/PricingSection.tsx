@@ -6,6 +6,7 @@ import PremiumButton from '../ui/PremiumButton';
 import { PACKAGES } from '@/data/packages';
 import { useSkipAnimation } from '@/lib/hooks';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { PHONE_DISPLAY, PHONE_TEL } from '@/lib/phone';
 import styles from './PricingSection.module.css';
 
 const PricingSection: React.FC = () => {
@@ -85,9 +86,9 @@ const PricingSection: React.FC = () => {
                     {t.pricing.getStartedBtn}
                   </PremiumButton>
                   <a
-                    href="tel:+37060521705"
+                    href={`tel:${PHONE_TEL}`}
                     className={styles.callBtn}
-                    aria-label={`Call ${t.nav.call}`}
+                    aria-label={`Call ${PHONE_DISPLAY}`}
                   >
                     {t.pricing.callBtn}
                   </a>
