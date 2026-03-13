@@ -164,7 +164,7 @@
   .rightPanel {
     border-left: none;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
-    min-height: 240px;
+    min-height: 300px;
   }
 }
 
@@ -178,7 +178,7 @@
 
 @media (max-width: 899px) {
   .heatmapContainer {
-    min-height: 240px;
+    min-height: 300px;
   }
 }
 

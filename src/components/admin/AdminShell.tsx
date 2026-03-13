@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { Inbox, LogOut, UserCheck, ListTodo } from "lucide-react";
+import { Inbox, LogOut, UserCheck, ListTodo, Menu, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminInstallPrompt from "./AdminInstallPrompt";
 import PushOptInBanner from "./PushOptInBanner";
@@ -42,6 +42,7 @@ export default function AdminShell({ children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -51,15 +52,161 @@ export default function AdminShell({ children }: Props) {
     void loadUser();
   }, []);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/");
   };
 
   return (
-    <div className="admin-console min-h-screen flex">
+    <div className="admin-console min-h-screen flex flex-col md:flex-row">
+      {/* Mobile top bar — only on small screens */}
+      <header
+        className="admin-mobile-header sticky top-0 z-40 flex items-center justify-between gap-3 border-b px-4 py-3 md:hidden"
+        style={{
+          borderColor: "var(--admin-border)",
+          background: "var(--admin-glass)",
+        }}
+      >
+        <Link
+          href="/admin/client-requests"
+          className="min-w-0"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <span
+            className="text-[10px] font-medium uppercase tracking-[0.2em] block"
+            style={{ color: "var(--admin-text-muted)" }}
+          >
+            Webinteli
+          </span>
+          <p className="text-sm font-semibold tracking-tight truncate" style={{ color: "var(--admin-text)" }}>
+            Admin Console
+          </p>
+        </Link>
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((o) => !o)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors"
+          style={{
+            borderColor: "var(--admin-border)",
+            color: "var(--admin-text)",
+            background: "var(--admin-bg-elevated)",
+          }}
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </header>
+
+      {/* Mobile nav overlay — only on small screens when open */}
+      {mobileMenuOpen && (
+        <div
+          className="admin-mobile-overlay fixed inset-0 z-50 md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation"
+        >
+          <div
+            className="absolute inset-0"
+            style={{ background: "rgba(0,0,0,0.5)" }}
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden
+          />
+          <div
+            className="admin-mobile-drawer absolute top-0 right-0 bottom-0 w-[min(100vw,280px)] flex flex-col overflow-hidden border-l shadow-2xl"
+            style={{
+              borderColor: "var(--admin-border)",
+              background: "var(--admin-glass)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between border-b px-4 py-4"
+              style={{ borderColor: "var(--admin-border)" }}
+            >
+              <span className="text-xs font-medium" style={{ color: "var(--admin-text-muted)" }}>
+                Welcome, <span style={{ color: "var(--admin-text)" }}>{getDisplayName(user)}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg"
+                style={{ color: "var(--admin-text-muted)" }}
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
+              {navItems.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(item.href + "/");
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={[
+                      "flex items-center gap-3 rounded-xl px-4 py-3.5 text-[15px] font-medium transition-colors",
+                      active
+                        ? "text-[var(--admin-accent)]"
+                        : "text-[var(--admin-text-muted)]",
+                    ].join(" ")}
+                    style={
+                      active
+                        ? {
+                            background: "var(--admin-accent-dim)",
+                            boxShadow: "inset 0 0 0 1px rgba(34, 211, 238, 0.2)",
+                          }
+                        : undefined
+                    }
+                  >
+                    <Icon className="h-5 w-5 shrink-0 opacity-80" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="border-t px-3 py-4" style={{ borderColor: "var(--admin-border)" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  void supabase.auth.signOut();
+                  router.push("/");
+                  setMobileMenuOpen(false);
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3.5 text-sm font-medium transition-colors"
+                style={{
+                  borderColor: "var(--admin-border)",
+                  color: "var(--admin-text-muted)",
+                  background: "transparent",
+                }}
+              >
+                <LogOut className="h-4 w-4" />
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop sidebar — hidden on mobile */}
       <aside
-        className="sticky top-0 h-screen w-52 shrink-0 flex flex-col overflow-hidden border-r backdrop-blur-xl transition-colors"
+        className="hidden md:flex sticky top-0 h-screen w-52 shrink-0 flex-col overflow-hidden border-r backdrop-blur-xl transition-colors"
         style={{
           borderColor: "var(--admin-border)",
           background: "var(--admin-glass)",
@@ -136,7 +283,7 @@ export default function AdminShell({ children }: Props) {
       </aside>
 
       <main className="flex-1 min-w-0">
-        <div className="max-w-6xl mx-auto px-8 py-10">
+        <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-10">
           <AdminInstallPrompt />
           <PushOptInBanner />
           {children}

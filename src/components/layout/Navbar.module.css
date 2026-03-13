@@ -30,6 +30,13 @@
   gap: 1rem;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
 .logo {
   font-size: 1.35rem;
   font-weight: 600;
@@ -409,6 +416,10 @@
   display: block;
   color: #fff;
   flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .scrolled .mobileMenu {
@@ -417,6 +428,179 @@
 
 @media (min-width: 768px) {
   .mobileMenu {
+    display: none;
+  }
+}
+
+/* Mobile-only layout and menu */
+@media (max-width: 767px) {
+  .header {
+    background: #000;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .scrolled {
+    background: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .inner {
+    position: relative;
+    z-index: 10000;
+    gap: 0.75rem;
+  }
+
+  .actions {
+    gap: 0.5rem;
+  }
+
+  .callButton {
+    display: none;
+  }
+
+  .mobileMenu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobilePanel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 4.25rem 1.25rem 1.5rem;
+    background: #000;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    transform: translateX(100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.25s ease, opacity 0.25s ease, visibility 0.25s ease;
+    z-index: 9998;
+  }
+
+  .mobilePanelOpen {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .scrolled .mobilePanel {
+    background: #ffffff;
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+  }
+
+  .mobileNav {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex: 1;
+  }
+
+  .mobileNavLink {
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    padding: 0.2rem 0;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .scrolled .mobileNavLink {
+    color: rgba(0, 0, 0, 0.8);
+  }
+
+  .mobileBeyondSeo {
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    margin-top: 0.25rem;
+  }
+
+  .scrolled .mobileBeyondSeo {
+    color: rgba(0, 0, 0, 0.8);
+  }
+
+  .mobileServices {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .scrolled .mobileServices {
+    border-top-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .mobileServicesGroup + .mobileServicesGroup {
+    margin-top: 0.5rem;
+  }
+
+  .mobileServicesGroupTitle {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 0.25rem;
+  }
+
+  .mobileServicesList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .mobileServicesLink {
+    display: block;
+    padding: 0.35rem 0;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .scrolled .mobileServicesLink {
+    color: rgba(0, 0, 0, 0.8);
+  }
+
+  .mobileCallButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    background: #10b981;
+    color: #000;
+  }
+}
+
+@media (min-width: 768px) {
+  .actions {
+    gap: 1rem;
+  }
+
+  .mobilePanel {
     display: none;
   }
 }

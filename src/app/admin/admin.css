@@ -90,3 +90,72 @@
 .admin-console table td {
   vertical-align: top !important;
 }
+
+/* ========== Mobile only: do not change desktop ========== */
+@media (max-width: 767px) {
+  .admin-console .admin-mobile-drawer {
+    animation: admin-drawer-in 0.25s ease-out;
+  }
+
+  .admin-console main .space-y-8 > * + * {
+    margin-top: 1.5rem;
+  }
+
+  .admin-console section.rounded-xl {
+    border-radius: 12px;
+  }
+
+  .admin-console .admin-metric {
+    min-width: 100%;
+    padding: 1rem 1.25rem;
+  }
+
+  .admin-console table {
+    font-size: 0.8125rem;
+  }
+
+  .admin-console table th,
+  .admin-console table td {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+  }
+
+  .admin-console table thead th {
+    padding-top: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .admin-console .admin-input,
+  .admin-console input[type="text"],
+  .admin-console input[type="email"],
+  .admin-console input[type="tel"],
+  .admin-console input[type="date"],
+  .admin-console select {
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    font-size: 16px;
+  }
+
+  .admin-console main button {
+    min-height: 44px;
+  }
+
+  .admin-console .rounded-xl.border.px-4.py-3 {
+    padding: 1rem 1.25rem;
+  }
+
+  .admin-console .mb-4.rounded-xl.border.px-4.py-3 {
+    padding: 1rem 1.25rem;
+  }
+}
+
+@keyframes admin-drawer-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0.9;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

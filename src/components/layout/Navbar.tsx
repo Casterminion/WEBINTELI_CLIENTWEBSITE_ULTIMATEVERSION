@@ -27,6 +27,7 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
   const { locale, setLocale, t } = useLanguage();
@@ -66,7 +67,8 @@ const Navbar: React.FC = () => {
   ];
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    setIsScrolled(latest > 50);
+    const nextScrolled = latest > 50;
+    setIsScrolled(nextScrolled);
   });
 
   useEffect(() => {
@@ -78,6 +80,18 @@ const Navbar: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    // effect depends on pathname for potential future behavior
+  }, [pathname]);
 
   return (
     <motion.header
@@ -147,43 +161,96 @@ const Navbar: React.FC = () => {
           </div>
         </nav>
 
-        <div ref={langRef} className={styles.langSwitch} role="group" aria-label="Language">
+        <div className={styles.actions}>
+          <div ref={langRef} className={styles.langSwitch} role="group" aria-label="Language">
+            <button
+              type="button"
+              onClick={() => setLangOpen(!langOpen)}
+              className={styles.langTrigger}
+              aria-expanded={langOpen}
+              aria-haspopup="true"
+            >
+              {locale === 'lt' ? 'LT' : 'EN'}
+              <svg className={`${styles.langChevron} ${langOpen ? styles.langChevronOpen : ''}`} width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden>
+                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <div className={`${styles.langMenu} ${langOpen ? styles.langMenuOpen : ''}`} role="menu">
+              {LANG_OPTIONS.map(({ locale: l, label }) => (
+                <button
+                  key={l}
+                  type="button"
+                  role="menuitem"
+                  className={styles.langItem}
+                  onClick={() => { setLocale(l); setLangOpen(false); }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <a href={`tel:${PHONE_TEL}`} className={styles.callButton} aria-label={`Call ${PHONE_DISPLAY}`}>
+            {PHONE_DISPLAY}
+          </a>
+
           <button
             type="button"
-            onClick={() => setLangOpen(!langOpen)}
-            className={styles.langTrigger}
-            aria-expanded={langOpen}
-            aria-haspopup="true"
+            className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.mobileMenuOpen : ''}`}
+            onClick={() => {
+              const next = !mobileMenuOpen;
+              setMobileMenuOpen(next);
+            }}
+            aria-label="Toggle navigation"
+            aria-expanded={mobileMenuOpen}
           >
-            {locale === 'lt' ? 'LT' : 'EN'}
-            <svg className={`${styles.langChevron} ${langOpen ? styles.langChevronOpen : ''}`} width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden>
-              <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" aria-hidden>
+              <path d="M5 7H25M5 15H20M5 23H10" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
-          <div className={`${styles.langMenu} ${langOpen ? styles.langMenuOpen : ''}`} role="menu">
-            {LANG_OPTIONS.map(({ locale: l, label }) => (
-              <button
-                key={l}
-                type="button"
-                role="menuitem"
-                className={styles.langItem}
-                onClick={() => { setLocale(l); setLangOpen(false); }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
         </div>
+      </div>
 
-        <a href={`tel:${PHONE_TEL}`} className={styles.callButton} aria-label={`Call ${PHONE_DISPLAY}`}>
+      <div className={`${styles.mobilePanel} ${mobileMenuOpen ? styles.mobilePanelOpen : ''}`}>
+        <nav className={styles.mobileNav}>
+          {navItems.map(({ label, href }) => (
+            <Link
+              key={href}
+              href={href}
+              className={styles.mobileNavLink}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {label}
+            </Link>
+          ))}
+          {dropdownGroups.flatMap((group) =>
+            group.items
+              .filter(({ href }) =>
+                href !== '/more/workflow-automation' &&
+                href !== '/more/mobile-app-development' &&
+                href !== '/more/custom-ai-solutions'
+              )
+              .map(({ label, href }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={styles.mobileNavLink}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {label}
+                </Link>
+              ))
+          )}
+        </nav>
+
+        <a
+          href={`tel:${PHONE_TEL}`}
+          className={styles.mobileCallButton}
+          aria-label={`Call ${PHONE_DISPLAY}`}
+          onClick={() => setMobileMenuOpen(false)}
+        >
           {PHONE_DISPLAY}
         </a>
-
-        <div className={styles.mobileMenu}>
-          <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor">
-            <path d="M5 7H25M5 15H20M5 23H10" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </div>
       </div>
     </motion.header>
   );

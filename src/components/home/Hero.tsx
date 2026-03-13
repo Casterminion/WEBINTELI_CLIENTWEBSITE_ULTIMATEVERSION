@@ -70,6 +70,23 @@ const Hero: React.FC = () => {
               <span className="thin">{titleParts[0]}{titleParts.length > 1 ? ',' : ''}</span> {titleParts.length > 1 && <em>{titleParts[1]}</em>}
             </motion.h1>
 
+            {/* Mobile-only inline video between title and subtitle */}
+            <div className={styles.mobileInlineVideo}>
+              <div className={styles.videoPlaceholder}>
+                <video
+                  className={styles.videoPreview}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                  aria-label="Hero video preview"
+                >
+                  <source src="/wp-content/uploads/2024/11/background.mp4" type="video/mp4" />
+                </video>
+              </div>
+            </div>
+
             <motion.p 
               className={styles.subtitle}
               initial={{ opacity: 0, y: 40, scale: 0.98 }}

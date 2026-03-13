@@ -154,6 +154,11 @@
   overflow: hidden;
 }
 
+.mobileInlineVideo {
+  display: none;
+  margin: 1.25rem 0 1.5rem;
+}
+
 .videoPreview {
   position: absolute;
   inset: 0;
@@ -263,6 +268,7 @@
 
   .heroRight {
     min-height: 0;
+    display: none;
   }
 
   .title {
@@ -284,6 +290,10 @@
     max-height: 220px;
     aspect-ratio: 16 / 9;
     border-radius: 10px;
+  }
+
+  .mobileInlineVideo {
+    display: block;
   }
 
   .playButton {
