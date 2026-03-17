@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import { Outfit, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { PHONE_TEL } from "@/lib/phone";
-
-const CookieBanner = dynamic(
-  () => import("@/components/layout/CookieBanner"),
-  { ssr: false }
-);
+import CookieBannerWrapper from "@/components/layout/CookieBannerWrapper";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -78,7 +73,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
-          <CookieBanner />
+          <CookieBannerWrapper />
         </LanguageProvider>
       </body>
     </html>
