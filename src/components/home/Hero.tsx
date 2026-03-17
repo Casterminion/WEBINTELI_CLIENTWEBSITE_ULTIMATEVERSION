@@ -83,7 +83,7 @@ const Hero: React.FC = () => {
                   aria-label="Hero video preview"
                 >
                   <source src="/wp-content/uploads/2024/11/background.mp4" type="video/mp4" />
-                  <track kind="captions" src="/captions-empty.vtt" srclang="lt" label="Lietuvių" />
+                  <track kind="captions" src="/captions-empty.vtt" srcLang="lt" label="Lietuvių" />
                 </video>
               </div>
             </div>
@@ -126,7 +126,7 @@ const Hero: React.FC = () => {
                 aria-label="Hero video preview"
               >
                 <source src="/wp-content/uploads/2024/11/background.mp4" type="video/mp4" />
-                <track kind="captions" src="/captions-empty.vtt" srclang="lt" label="Lietuvių" />
+                <track kind="captions" src="/captions-empty.vtt" srcLang="lt" label="Lietuvių" />
               </video>
               <button
                 type="button"
