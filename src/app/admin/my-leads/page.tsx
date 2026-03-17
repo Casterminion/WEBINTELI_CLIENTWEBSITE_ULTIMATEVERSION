@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Inbox, Loader2, Search, Plus, X, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { Inbox, Loader2, Search, Plus, X, Filter, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 type Lead = {
   id: string;
@@ -18,6 +19,7 @@ type Lead = {
   status: string;
   claimed_at: string | null;
   created_at: string;
+  outreach_email: string | null;
 };
 
 const STATUS_OPTIONS = [
@@ -30,6 +32,12 @@ const STATUS_OPTIONS = [
 ];
 
 const SERVICE_OPTIONS = ["SEO", "PPC", "Content", "Other"];
+
+const OUTREACH_EMAIL_OPTIONS = [
+  "arijus@webinteli.lt",
+  "joris@webinteli.lt",
+] as const;
+const DEFAULT_OUTREACH_EMAIL = OUTREACH_EMAIL_OPTIONS[0];
 
 function getFollowUpDueDates(): string[] {
   const dates: string[] = [];
@@ -71,7 +79,10 @@ export default function MyLeadsPage() {
     phone: "",
     business_owner_name: "",
     service: "SEO",
+    outreach_email: DEFAULT_OUTREACH_EMAIL,
   });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -83,7 +94,7 @@ export default function MyLeadsPage() {
       const [leadsRes, tasksRes] = await Promise.all([
         supabase
           .from("intake_submissions")
-          .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at")
+          .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at, outreach_email")
           .eq("assigned_to", user.id)
           .neq("status", "lost")
           .order("claimed_at", { ascending: false }),
@@ -148,6 +159,7 @@ export default function MyLeadsPage() {
         package_slug: "manual",
         package_price_display: "",
         service: service || "SEO",
+        outreach_email: addLeadForm.outreach_email || null,
         assigned_to: user.id,
         status: "new",
         claimed_at: new Date().toISOString(),
@@ -173,13 +185,13 @@ export default function MyLeadsPage() {
       setAddLeadSubmitting(false);
       return;
     }
-    setAddLeadForm({ name: "", email: "", phone: "", business_owner_name: "", service: "SEO" });
+    setAddLeadForm({ name: "", email: "", phone: "", business_owner_name: "", service: "SEO", outreach_email: DEFAULT_OUTREACH_EMAIL });
     setAddLeadOpen(false);
     setAddLeadSubmitting(false);
     setError(null);
     const { data: refreshed } = await supabase
       .from("intake_submissions")
-      .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at")
+      .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at, outreach_email")
       .eq("assigned_to", user.id)
       .neq("status", "lost")
       .order("claimed_at", { ascending: false });
@@ -206,65 +218,113 @@ export default function MyLeadsPage() {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
+  const openDeleteConfirm = useCallback((e: React.MouseEvent, leadId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDeleteConfirmId(leadId);
+  }, []);
+
+  const performDelete = useCallback(async () => {
+    const id = deleteConfirmId;
+    if (!id) return;
+    setDeletingId(id);
+    setError(null);
+    const { data: deleted, error: err } = await supabase
+      .from("intake_submissions")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    setDeletingId(null);
+    setDeleteConfirmId(null);
+    if (err) {
+      setError(err.message || "Failed to delete.");
+      return;
+    }
+    if (!deleted?.length) {
+      setError("Delete was not allowed. You may need to be logged in.");
+      return;
+    }
+    setLeads((prev) => prev.filter((l) => l.id !== id));
+    setTodayLeadIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, [deleteConfirmId]);
+
+  const closeDeleteConfirm = useCallback(() => {
+    setDeleteConfirmId(null);
+  }, []);
+
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-5">
+      <ConfirmDialog
+        open={!!deleteConfirmId}
+        onClose={closeDeleteConfirm}
+        onConfirm={performDelete}
+        title="Delete lead?"
+        message="This lead and its follow-up tasks will be removed. This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={deletingId === deleteConfirmId}
+      />
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
+          <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
             My leads
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm" style={{ color: "var(--admin-text-muted)" }}>
+          <p className="mt-0.5 max-w-xl text-xs" style={{ color: "var(--admin-text-muted)" }}>
             Leads assigned to you. Click a row to open the lead.
           </p>
         </div>
-        <div className="admin-metric flex min-w-[120px] flex-col rounded-xl px-5 py-4">
+        <div className="admin-metric flex items-center gap-4 rounded-md px-4 py-2.5 tabular-nums">
           <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
             Total
           </span>
-          <span className="mt-1 text-2xl font-semibold tabular-nums">
+          <span className="text-xl font-semibold">
             {filtered.length}
           </span>
         </div>
       </header>
 
       <section
-        className="rounded-xl border overflow-hidden"
+        className="rounded-md border overflow-hidden"
         style={{
           borderColor: "var(--admin-border)",
           background: "var(--admin-panel)",
-          boxShadow: "var(--admin-shadow)",
         }}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
           <button
             type="button"
             onClick={() => setFiltersOpen((o) => !o)}
-            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-[var(--admin-bg-elevated)]"
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors hover:bg-[var(--admin-bg-elevated)]"
             style={{
               borderColor: filtersOpen ? "var(--admin-accent)" : "var(--admin-border)",
               background: filtersOpen ? "var(--admin-accent-dim)" : "transparent",
               color: filtersOpen ? "var(--admin-accent)" : "var(--admin-text-muted)",
             }}
           >
-            <Filter className="h-4 w-4 shrink-0" />
+            <Filter className="h-3.5 w-3.5 shrink-0" />
             Filters
             {(search || statusFilter !== "all" || serviceFilter !== "all" || followUpToday) && (
-              <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "var(--admin-accent-dim)", color: "var(--admin-accent)" }}>
+              <span className="rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "var(--admin-accent-dim)", color: "var(--admin-accent)" }}>
                 Active
               </span>
             )}
-            {filtersOpen ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+            {filtersOpen ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
           </button>
           <button
             type="button"
             onClick={() => setAddLeadOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-90"
             style={{
               background: "var(--admin-accent)",
-              color: "var(--admin-bg)",
+              color: "#ffffff",
             }}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             Add lead
           </button>
         </div>
@@ -336,11 +396,10 @@ export default function MyLeadsPage() {
           onClick={() => !addLeadSubmitting && setAddLeadOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-xl border p-6"
+            className="w-full max-w-md rounded-md border p-5"
             style={{
               borderColor: "var(--admin-border)",
               background: "var(--admin-panel)",
-              boxShadow: "var(--admin-shadow)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -413,6 +472,21 @@ export default function MyLeadsPage() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Sent from email</label>
+                <select
+                  value={addLeadForm.outreach_email}
+                  onChange={(e) => setAddLeadForm((p) => ({ ...p, outreach_email: e.target.value }))}
+                  className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                >
+                  {OUTREACH_EMAIL_OPTIONS.map((addr) => (
+                    <option key={addr} value={addr}>{addr}</option>
+                  ))}
+                </select>
+                <p className="mt-0.5 text-[10px]" style={{ color: "var(--admin-text-muted)" }}>
+                  Which email you used for this cold outreach (for your reference).
+                </p>
+              </div>
               {error && <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>}
               <div className="flex gap-3 pt-2">
                 <button
@@ -438,11 +512,10 @@ export default function MyLeadsPage() {
       )}
 
       <section
-        className="flex flex-col rounded-xl border overflow-hidden"
+        className="flex flex-col rounded-md border overflow-hidden"
         style={{
           borderColor: "var(--admin-border)",
           background: "var(--admin-panel)",
-          boxShadow: "var(--admin-shadow)",
         }}
       >
         {loading ? (
@@ -460,57 +533,155 @@ export default function MyLeadsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto w-full">
-            <table className="min-w-full text-sm" style={{ tableLayout: "auto" }}>
-              <thead>
-                <tr
-                  className="text-left text-xs font-medium uppercase tracking-wider"
-                  style={{ color: "var(--admin-text-muted)", background: "var(--admin-bg-elevated)" }}
-                >
-                  <th className="px-5 pt-4 pb-2" style={{ verticalAlign: "top" }}>Name</th>
-                  <th className="px-5 pt-4 pb-2" style={{ verticalAlign: "top" }}>Email</th>
-                  <th className="px-5 pt-4 pb-2 hidden sm:table-cell" style={{ verticalAlign: "top" }}>Phone</th>
-                  <th className="px-5 pt-4 pb-2 hidden md:table-cell" style={{ verticalAlign: "top" }}>Business owner</th>
-                  <th className="px-5 pt-4 pb-2" style={{ verticalAlign: "top" }}>City</th>
-                  <th className="px-5 pt-4 pb-2" style={{ verticalAlign: "top" }}>Service</th>
-                  <th className="px-5 pt-4 pb-2" style={{ verticalAlign: "top" }}>Status</th>
-                  <th className="px-5 pt-4 pb-2" style={{ verticalAlign: "top" }}>Claimed</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((lead, i) => (
-                  <tr
-                    key={lead.id}
-                    role="button"
-                    tabIndex={0}
-                    className="admin-table-row cursor-pointer transition-colors"
-                    style={{
-                      borderBottom: "1px solid var(--admin-border)",
-                      background: i % 2 === 1 ? "var(--admin-bg-elevated)" : "transparent",
-                    }}
-                    onClick={() => router.push(`/admin/leads/${lead.id}`)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        router.push(`/admin/leads/${lead.id}`);
-                      }
-                    }}
+          <>
+            {/* ── MOBILE CARDS (below md) ── */}
+            <div className="md:hidden divide-y" style={{ borderColor: "var(--admin-border)" }}>
+              {filtered.map((lead) => (
+                <div key={lead.id} className="px-4 py-4" style={{ borderBottomColor: "var(--admin-border)" }}>
+                  {/* Top: name + email */}
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--admin-text)" }}>
+                        {lead.name}
+                      </p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--admin-text-muted)" }}>
+                        {lead.email}
+                      </p>
+                    </div>
+                    <span
+                      className="shrink-0 text-[10px] font-semibold uppercase tracking-wide rounded px-2 py-0.5"
+                      style={{
+                        background: "var(--admin-accent-dim)",
+                        color: "var(--admin-accent)",
+                      }}
+                    >
+                      {formatStatus(lead.status)}
+                    </span>
+                  </div>
+
+                  {/* Middle: label-value grid */}
+                  <div
+                    className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md px-3 py-2.5 mb-3"
+                    style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
                   >
-                    <td className="px-5 py-2.5 font-medium" style={{ color: "var(--admin-text)", verticalAlign: "top" }}>{lead.name}</td>
-                    <td className="px-5 py-2.5 tabular-nums" style={{ color: "var(--admin-text-muted)", verticalAlign: "top" }}>{lead.email}</td>
-                    <td className="px-5 py-2.5 hidden sm:table-cell tabular-nums" style={{ color: "var(--admin-text)", verticalAlign: "top" }}>{lead.phone || "—"}</td>
-                    <td className="px-5 py-2.5 hidden md:table-cell" style={{ color: "var(--admin-text)", verticalAlign: "top" }}>{lead.business_owner_name || "—"}</td>
-                    <td className="px-5 py-2.5" style={{ color: "var(--admin-text)", verticalAlign: "top" }}>{lead.city}</td>
-                    <td className="px-5 py-2.5" style={{ color: "var(--admin-text)", verticalAlign: "top" }}>{lead.service}</td>
-                    <td className="px-5 py-2.5" style={{ color: "var(--admin-text)", verticalAlign: "top" }}>{formatStatus(lead.status)}</td>
-                    <td className="px-5 py-2.5 text-xs tabular-nums" style={{ color: "var(--admin-text-muted)", verticalAlign: "top" }}>
+                    {([
+                      ["City", lead.city],
+                      ["Service", lead.service],
+                      ["Phone", lead.phone || "—"],
+                      ["Owner", lead.business_owner_name || "—"],
+                      ...(lead.outreach_email ? [["From", lead.outreach_email]] as [string, string][] : []),
+                    ] as [string, string][]).map(([label, val]) => (
+                      <div key={label}>
+                        <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>
+                          {label}
+                        </p>
+                        <p className="text-xs" style={{ color: "var(--admin-text)" }}>{val}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Bottom: claimed date + actions */}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[11px] tabular-nums" style={{ color: "var(--admin-text-muted)" }}>
                       {formatDate(lead.claimed_at)}
-                    </td>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => openDeleteConfirm(e, lead.id)}
+                        disabled={deletingId === lead.id}
+                        className="inline-flex items-center justify-center rounded p-1.5 transition-colors disabled:opacity-50 hover:bg-red-500/10 hover:text-red-500"
+                        style={{ color: "var(--admin-text-muted)" }}
+                        title="Delete"
+                      >
+                        {deletingId === lead.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/leads/${lead.id}`)}
+                        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                        style={{ background: "var(--admin-accent)", color: "#ffffff" }}
+                      >
+                        Open Lead
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── DESKTOP TABLE (md and up) ── */}
+            <div className="hidden md:block overflow-x-auto w-full">
+              <table className="min-w-full text-sm" style={{ tableLayout: "auto" }}>
+                <thead>
+                  <tr
+                    className="text-left text-[10px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--admin-text-muted)", background: "var(--admin-bg)" }}
+                  >
+                    <th className="px-4 py-2.5">Name</th>
+                    <th className="px-4 py-2.5">Email</th>
+                    <th className="px-4 py-2.5 hidden sm:table-cell">Phone</th>
+                    <th className="px-4 py-2.5 hidden md:table-cell">Business owner</th>
+                    <th className="px-4 py-2.5">City</th>
+                    <th className="px-4 py-2.5">Service</th>
+                    <th className="px-4 py-2.5">Status</th>
+                    <th className="px-4 py-2.5">Claimed</th>
+                    <th className="w-12 px-4 py-2.5 text-right" aria-label="Actions" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filtered.map((lead) => (
+                    <tr
+                      key={lead.id}
+                      role="button"
+                      tabIndex={0}
+                      className="admin-table-row cursor-pointer transition-colors"
+                      style={{ borderBottom: "1px solid var(--admin-border)" }}
+                      onClick={() => router.push(`/admin/leads/${lead.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          router.push(`/admin/leads/${lead.id}`);
+                        }
+                      }}
+                    >
+                      <td className="px-4 py-2 font-medium text-sm" style={{ color: "var(--admin-text)" }}>{lead.name}</td>
+                      <td className="px-4 py-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>{lead.email}</td>
+                      <td className="px-4 py-2 hidden sm:table-cell tabular-nums text-sm" style={{ color: "var(--admin-text)" }}>{lead.phone || "—"}</td>
+                      <td className="px-4 py-2 hidden md:table-cell text-sm" style={{ color: "var(--admin-text)" }}>{lead.business_owner_name || "—"}</td>
+                      <td className="px-4 py-2 text-sm" style={{ color: "var(--admin-text)" }}>{lead.city}</td>
+                      <td className="px-4 py-2 text-sm" style={{ color: "var(--admin-text)" }}>{lead.service}</td>
+                      <td className="px-4 py-2 text-sm" style={{ color: "var(--admin-text)" }}>{formatStatus(lead.status)}</td>
+                      <td className="px-4 py-2 text-xs tabular-nums whitespace-nowrap" style={{ color: "var(--admin-text-muted)" }}>
+                        {formatDate(lead.claimed_at)}
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => openDeleteConfirm(e, lead.id)}
+                          disabled={deletingId === lead.id}
+                          className="inline-flex items-center justify-center rounded p-1.5 transition-colors disabled:opacity-50 hover:bg-red-500/10 hover:text-red-500"
+                          style={{ color: "var(--admin-text-muted)" }}
+                          title="Delete"
+                          aria-label="Delete lead"
+                        >
+                          {deletingId === lead.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </div>

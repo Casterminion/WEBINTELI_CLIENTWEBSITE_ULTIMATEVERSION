@@ -3,19 +3,22 @@
  * Does not affect the public site or globals.
  */
 .admin-console {
-  --admin-bg: #0f1419;
-  --admin-bg-elevated: #161b22;
-  --admin-panel: #1c2128;
-  --admin-border: rgba(255, 255, 255, 0.06);
-  --admin-border-hover: rgba(255, 255, 255, 0.1);
-  --admin-accent: #22d3ee;
-  --admin-accent-dim: rgba(34, 211, 238, 0.15);
-  --admin-text: #e6edf3;
-  --admin-text-muted: #8b949e;
-  --admin-glass: rgba(22, 27, 34, 0.85);
-  --admin-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --admin-radius: 10px;
-  --admin-radius-lg: 14px;
+  --admin-bg: #0B0F14;
+  --admin-bg-elevated: #161D26;
+  --admin-panel: #121821;
+  --admin-border: #1F2933;
+  --admin-border-hover: #2D3A47;
+  --admin-accent: #3B82F6;
+  --admin-accent-dim: rgba(59, 130, 246, 0.15);
+  --admin-text: #E6EDF3;
+  --admin-text-muted: #9AA6B2;
+  --admin-danger: #EF4444;
+  --admin-success: #22C55E;
+  --admin-warning: #F59E0B;
+  --admin-glass: rgba(18, 24, 33, 0.85);
+  --admin-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --admin-radius: 6px;
+  --admin-radius-lg: 8px;
 }
 
 .admin-console {
@@ -51,44 +54,38 @@
 .admin-console .admin-input:focus {
   outline: none;
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px var(--admin-accent-dim);
 }
 
 .admin-console .admin-metric {
   background: var(--admin-panel);
   border: 1px solid var(--admin-border);
-  color: var(--admin-accent);
+  color: var(--admin-text);
   font-variant-numeric: tabular-nums;
 }
 
 .admin-console .admin-skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--admin-bg-elevated) 25%,
-    var(--admin-border-hover) 50%,
-    var(--admin-bg-elevated) 75%
-  );
-  background-size: 200% 100%;
-  animation: admin-skeleton-shine 1.2s ease-in-out infinite;
-  border-radius: 4px;
+  background: var(--admin-bg-elevated);
+  border: 1px solid var(--admin-border);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border-radius: var(--admin-radius);
 }
 
-@keyframes admin-skeleton-shine {
-  0% {
-    background-position: 200% 0;
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
   }
-  100% {
-    background-position: -200% 0;
+  50% {
+    opacity: .5;
   }
 }
 
 .admin-console .admin-table-row:hover {
-  background: var(--admin-accent-dim) !important;
+  background: var(--admin-bg-elevated) !important;
 }
 
 .admin-console table th,
 .admin-console table td {
-  vertical-align: top !important;
+  vertical-align: middle !important;
 }
 
 /* ========== Mobile only: do not change desktop ========== */

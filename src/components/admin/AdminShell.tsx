@@ -161,21 +161,13 @@ export default function AdminShell({ children }: Props) {
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={[
-                      "flex items-center gap-3 rounded-xl px-4 py-3.5 text-[15px] font-medium transition-colors",
+                      "flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium transition-colors border-l-2",
                       active
-                        ? "text-[var(--admin-accent)]"
-                        : "text-[var(--admin-text-muted)]",
+                        ? "text-[var(--admin-accent)] border-[var(--admin-accent)] bg-[var(--admin-accent-dim)]"
+                        : "text-[var(--admin-text-muted)] border-transparent hover:text-[var(--admin-text)] hover:bg-[var(--admin-bg-elevated)]",
                     ].join(" ")}
-                    style={
-                      active
-                        ? {
-                            background: "var(--admin-accent-dim)",
-                            boxShadow: "inset 0 0 0 1px rgba(34, 211, 238, 0.2)",
-                          }
-                        : undefined
-                    }
                   >
-                    <Icon className="h-5 w-5 shrink-0 opacity-80" />
+                    <Icon className="h-4 w-4 shrink-0" />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -189,7 +181,7 @@ export default function AdminShell({ children }: Props) {
                   router.push("/");
                   setMobileMenuOpen(false);
                 }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3.5 text-sm font-medium transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--admin-bg-elevated)] hover:text-[var(--admin-text)]"
                 style={{
                   borderColor: "var(--admin-border)",
                   color: "var(--admin-text-muted)",
@@ -206,14 +198,14 @@ export default function AdminShell({ children }: Props) {
 
       {/* Desktop sidebar — hidden on mobile */}
       <aside
-        className="hidden md:flex sticky top-0 h-screen w-52 shrink-0 flex-col overflow-hidden border-r backdrop-blur-xl transition-colors"
+        className="hidden md:flex sticky top-0 h-screen w-48 shrink-0 flex-col overflow-hidden border-r backdrop-blur-xl transition-colors"
         style={{
           borderColor: "var(--admin-border)",
-          background: "var(--admin-glass)",
+          background: "var(--admin-panel)",
         }}
       >
         <div
-          className="px-5 py-6 border-b"
+          className="px-4 py-5 border-b"
           style={{ borderColor: "var(--admin-border)" }}
         >
           <Link href="/admin/client-requests" className="block">
@@ -232,7 +224,7 @@ export default function AdminShell({ children }: Props) {
           </p>
         </div>
 
-        <nav className="flex min-h-0 flex-1 flex-col px-2.5 py-4 space-y-0.5 overflow-hidden">
+        <nav className="flex min-h-0 flex-1 flex-col px-2 py-3 space-y-1 overflow-hidden">
           {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
@@ -241,21 +233,13 @@ export default function AdminShell({ children }: Props) {
                 key={item.href}
                 href={item.href}
                 className={[
-                  "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all duration-200",
+                  "flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-all duration-200 border-l-2",
                   active
-                    ? "text-[var(--admin-accent)]"
-                    : "text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]",
+                    ? "text-[var(--admin-accent)] border-[var(--admin-accent)] bg-[var(--admin-bg-elevated)]"
+                    : "text-[var(--admin-text-muted)] border-transparent hover:text-[var(--admin-text)] hover:bg-[var(--admin-bg-elevated)]",
                 ].join(" ")}
-                style={
-                  active
-                    ? {
-                        background: "var(--admin-accent-dim)",
-                        boxShadow: "inset 0 0 0 1px rgba(34, 211, 238, 0.2)",
-                      }
-                    : undefined
-                }
               >
-                <Icon className="h-4 w-4 shrink-0 opacity-80" />
+                <Icon className="h-4 w-4 shrink-0" />
                 <span>{item.label}</span>
               </Link>
             );
@@ -263,13 +247,13 @@ export default function AdminShell({ children }: Props) {
         </nav>
 
         <div
-          className="px-2.5 py-4 border-t"
+          className="px-2 py-3 border-t"
           style={{ borderColor: "var(--admin-border)" }}
         >
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-medium transition-colors hover:border-[var(--admin-border-hover)] hover:bg-[var(--admin-bg-elevated)] hover:text-[var(--admin-text)]"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition-colors hover:border-[var(--admin-border-hover)] hover:bg-[var(--admin-bg-elevated)] hover:text-[var(--admin-text)]"
             style={{
               color: "var(--admin-text-muted)",
               borderColor: "var(--admin-border)",
@@ -283,7 +267,7 @@ export default function AdminShell({ children }: Props) {
       </aside>
 
       <main className="flex-1 min-w-0">
-        <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-10">
+        <div className="max-w-6xl mx-auto px-4 py-4 md:px-6 md:py-6">
           <AdminInstallPrompt />
           <PushOptInBanner />
           {children}

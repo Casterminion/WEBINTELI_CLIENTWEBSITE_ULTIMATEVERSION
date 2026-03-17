@@ -99,82 +99,80 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-5">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
+          <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
             Tasks
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm" style={{ color: "var(--admin-text-muted)" }}>
+          <p className="mt-0.5 max-w-xl text-xs" style={{ color: "var(--admin-text-muted)" }}>
             All follow-up and other tasks. Click a row to open the lead.
           </p>
         </div>
-        <div className="admin-metric flex min-w-[120px] flex-col rounded-xl px-5 py-4">
+        <div className="admin-metric flex items-center gap-4 rounded-md px-4 py-2.5 tabular-nums">
           <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
             Total
           </span>
-          <span className="mt-1 text-2xl font-semibold tabular-nums">
+          <span className="text-xl font-semibold">
             {filteredTasks.length}
           </span>
         </div>
       </header>
 
       <div
-        className="flex flex-wrap items-center gap-2 rounded-xl border px-4 py-3"
+        className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2.5"
         style={{
           borderColor: "var(--admin-border)",
           background: "var(--admin-panel)",
-          boxShadow: "var(--admin-shadow)",
         }}
       >
-        <span className="text-xs font-medium uppercase tracking-wider mr-2" style={{ color: "var(--admin-text-muted)" }}>View:</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider mr-2" style={{ color: "var(--admin-text-muted)" }}>View:</span>
         <button
           type="button"
           onClick={() => setViewMode("today")}
-          className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors"
           style={{
             borderColor: viewMode === "today" ? "var(--admin-accent)" : "var(--admin-border)",
             background: viewMode === "today" ? "var(--admin-accent-dim)" : "transparent",
             color: viewMode === "today" ? "var(--admin-accent)" : "var(--admin-text-muted)",
           }}
         >
-          <Calendar className="h-4 w-4" />
+          <Calendar className="h-3.5 w-3.5" />
           Today
         </button>
         <button
           type="button"
           onClick={() => setViewMode("upcoming")}
-          className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors"
           style={{
             borderColor: viewMode === "upcoming" ? "var(--admin-accent)" : "var(--admin-border)",
             background: viewMode === "upcoming" ? "var(--admin-accent-dim)" : "transparent",
             color: viewMode === "upcoming" ? "var(--admin-accent)" : "var(--admin-text-muted)",
           }}
         >
-          <Calendar className="h-4 w-4" />
+          <Calendar className="h-3.5 w-3.5" />
           Upcoming
         </button>
         <button
           type="button"
           onClick={() => setViewMode("all")}
-          className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors"
           style={{
             borderColor: viewMode === "all" ? "var(--admin-accent)" : "var(--admin-border)",
             background: viewMode === "all" ? "var(--admin-accent-dim)" : "transparent",
             color: viewMode === "all" ? "var(--admin-accent)" : "var(--admin-text-muted)",
           }}
         >
-          <ListTodo className="h-4 w-4" />
+          <ListTodo className="h-3.5 w-3.5" />
           All tasks
         </button>
       </div>
 
       <section
-        className="rounded-xl border overflow-hidden"
+        className="rounded-md border overflow-hidden"
         style={{
           borderColor: "var(--admin-border)",
           background: "var(--admin-panel)",
-          boxShadow: "var(--admin-shadow)",
         }}
       >
         {loading ? (
@@ -192,64 +190,135 @@ export default function TasksPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr
-                  className="text-left text-xs font-medium uppercase tracking-wider"
-                  style={{ color: "var(--admin-text-muted)", background: "var(--admin-bg-elevated)" }}
+          <>
+            {/* ── MOBILE CARDS (below md) ── */}
+            <div className="md:hidden divide-y" style={{ borderColor: "var(--admin-border)" }}>
+              {filteredTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="px-4 py-4"
+                  style={{ borderBottomColor: "var(--admin-border)" }}
                 >
-                  <th className="px-5 py-3.5 w-12">Done</th>
-                  <th className="px-5 py-3.5">Due date</th>
-                  <th className="px-5 py-3.5">Lead</th>
-                  <th className="px-5 py-3.5">Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTasks.map((task, i) => (
-                  <tr
-                    key={task.id}
-                    className="admin-table-row cursor-pointer transition-colors"
-                    style={{
-                      borderBottom: "1px solid var(--admin-border)",
-                      background: i % 2 === 1 ? "var(--admin-bg-elevated)" : "transparent",
-                    }}
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).closest("button")) return;
-                      router.push(`/admin/leads/${task.lead_id}`);
-                    }}
-                  >
-                    <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => toggleComplete(task.id, !task.completed_at)}
-                        className="flex h-6 w-6 items-center justify-center rounded border transition-colors"
+                  {/* Top: lead name + email + done toggle */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleComplete(task.id, !task.completed_at)}
+                      className="shrink-0 flex h-6 w-6 items-center justify-center rounded border transition-colors mt-0.5"
+                      style={{
+                        borderColor: "var(--admin-border)",
+                        background: task.completed_at ? "var(--admin-success)" : "transparent",
+                        color: task.completed_at ? "#000" : "var(--admin-text-muted)",
+                      }}
+                    >
+                      {task.completed_at ? <Check className="h-3.5 w-3.5" /> : null}
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="text-sm font-semibold truncate"
                         style={{
-                          borderColor: "var(--admin-border)",
-                          background: task.completed_at ? "var(--admin-accent)" : "transparent",
-                          color: task.completed_at ? "var(--admin-bg)" : "var(--admin-text-muted)",
+                          color: "var(--admin-text)",
+                          opacity: task.completed_at ? 0.5 : 1,
+                          textDecoration: task.completed_at ? "line-through" : "none",
                         }}
                       >
-                        {task.completed_at ? <Check className="h-3.5 w-3.5" /> : null}
-                      </button>
-                    </td>
-                    <td className="px-5 py-3.5 tabular-nums" style={{ color: "var(--admin-text)" }}>
-                      {formatDate(task.due_date)}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="font-medium" style={{ color: "var(--admin-text)" }}>{task.lead_name ?? "—"}</span>
+                        {task.lead_name ?? "—"}
+                      </p>
                       {task.lead_email && (
-                        <span className="ml-1 text-xs" style={{ color: "var(--admin-text-muted)" }}>{task.lead_email}</span>
+                        <p className="text-xs mt-0.5 truncate" style={{ color: "var(--admin-text-muted)" }}>
+                          {task.lead_email}
+                        </p>
                       )}
-                    </td>
-                    <td className="px-5 py-3.5 capitalize" style={{ color: "var(--admin-text-muted)" }}>
-                      {task.task_type.replace("_", " ")}
-                    </td>
+                    </div>
+                  </div>
+
+                  {/* Middle: label-value data */}
+                  <div
+                    className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md px-3 py-2.5 mb-3"
+                    style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
+                  >
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>Due date</p>
+                      <p className="text-xs tabular-nums" style={{ color: "var(--admin-text)" }}>{formatDate(task.due_date)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>Type</p>
+                      <p className="text-xs capitalize" style={{ color: "var(--admin-text)" }}>{task.task_type.replace("_", " ")}</p>
+                    </div>
+                  </div>
+
+                  {/* Bottom: open lead action */}
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/admin/leads/${task.lead_id}`)}
+                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                      style={{ background: "var(--admin-accent)", color: "#ffffff" }}
+                    >
+                      Open Lead
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── DESKTOP TABLE (md and up) ── */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr
+                    className="text-left text-[10px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--admin-text-muted)", background: "var(--admin-bg)" }}
+                  >
+                    <th className="px-4 py-2.5 w-10">Done</th>
+                    <th className="px-4 py-2.5">Due date</th>
+                    <th className="px-4 py-2.5">Lead</th>
+                    <th className="px-4 py-2.5">Type</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredTasks.map((task) => (
+                    <tr
+                      key={task.id}
+                      className="admin-table-row cursor-pointer transition-colors"
+                      style={{ borderBottom: "1px solid var(--admin-border)" }}
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest("button")) return;
+                        router.push(`/admin/leads/${task.lead_id}`);
+                      }}
+                    >
+                      <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => toggleComplete(task.id, !task.completed_at)}
+                          className="flex h-5 w-5 items-center justify-center rounded border transition-colors"
+                          style={{
+                            borderColor: "var(--admin-border)",
+                            background: task.completed_at ? "var(--admin-success)" : "transparent",
+                            color: task.completed_at ? "#000" : "var(--admin-text-muted)",
+                          }}
+                        >
+                          {task.completed_at ? <Check className="h-3 w-3" /> : null}
+                        </button>
+                      </td>
+                      <td className="px-4 py-2 tabular-nums text-sm" style={{ color: "var(--admin-text)" }}>
+                        {formatDate(task.due_date)}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="font-medium text-sm" style={{ color: "var(--admin-text)" }}>{task.lead_name ?? "—"}</span>
+                        {task.lead_email && (
+                          <span className="ml-1.5 text-xs" style={{ color: "var(--admin-text-muted)" }}>{task.lead_email}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 capitalize text-sm" style={{ color: "var(--admin-text-muted)" }}>
+                        {task.task_type.replace("_", " ")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </div>

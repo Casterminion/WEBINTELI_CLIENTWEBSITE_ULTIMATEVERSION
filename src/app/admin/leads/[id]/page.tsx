@@ -3,8 +3,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, Pencil } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+
+const SERVICE_OPTIONS = ["SEO", "PPC", "Content", "Other"];
+
+type EditForm = {
+  name: string;
+  email: string;
+  phone: string;
+  business_owner_name: string;
+  city: string;
+  industry: string;
+  service: string;
+  package_price_display: string;
+};
 
 type Lead = {
   id: string;
@@ -22,6 +35,7 @@ type Lead = {
   status: string;
   loom_url: string | null;
   claimed_at: string | null;
+  outreach_email: string | null;
 };
 
 function getFollowUpDueDates(): string[] {
@@ -52,6 +66,18 @@ export default function LeadDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [markingLost, setMarkingLost] = useState(false);
   const [markingSold, setMarkingSold] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm>({
+    name: "",
+    email: "",
+    phone: "",
+    business_owner_name: "",
+    city: "",
+    industry: "",
+    service: "SEO",
+    package_price_display: "",
+  });
 
   const loadLead = useCallback(async () => {
     if (!id) return;
@@ -135,6 +161,48 @@ export default function LeadDetailPage() {
     setMarkingSold(false);
   };
 
+  const startEditing = useCallback(() => {
+    if (!lead) return;
+    setEditForm({
+      name: lead.name ?? "",
+      email: lead.email ?? "",
+      phone: lead.phone ?? "",
+      business_owner_name: lead.business_owner_name ?? "",
+      city: lead.city ?? "",
+      industry: lead.industry ?? "",
+      service: lead.service ?? "SEO",
+      package_price_display: lead.package_price_display ?? "",
+    });
+    setError(null);
+    setIsEditing(true);
+  }, [lead]);
+
+  const handleSaveEdit = async () => {
+    if (!id) return;
+    setSaving(true);
+    setError(null);
+    const { error: err } = await supabase
+      .from("intake_submissions")
+      .update({
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim() || null,
+        business_owner_name: editForm.business_owner_name.trim() || null,
+        city: editForm.city.trim(),
+        industry: editForm.industry.trim(),
+        service: editForm.service.trim() || "SEO",
+        package_price_display: editForm.package_price_display.trim(),
+      })
+      .eq("id", id);
+    setSaving(false);
+    if (err) {
+      setError(err.message || "Failed to save.");
+      return;
+    }
+    await loadLead();
+    setIsEditing(false);
+  };
+
   const formatDate = (value: string) => {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
@@ -194,23 +262,147 @@ export default function LeadDetailPage() {
         }}
       >
         <div className="p-6">
-          <Link
-            href="/admin/client-requests"
-            className="inline-flex items-center gap-2 text-sm transition-colors hover:opacity-80 mb-6"
-            style={{ color: "var(--admin-text-muted)" }}
-          >
-            <ArrowLeft className="h-4 w-4 shrink-0" />
-            <span>Back to Client Requests</span>
-          </Link>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <Link
+              href="/admin/client-requests"
+              className="inline-flex items-center gap-2 text-sm transition-colors hover:opacity-80"
+              style={{ color: "var(--admin-text-muted)" }}
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              <span>Back to Client Requests</span>
+            </Link>
+            {!isUnclaimed && !isEditing && (
+              <button
+                type="button"
+                onClick={startEditing}
+                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+                style={{
+                  borderColor: "var(--admin-border)",
+                  color: "var(--admin-text)",
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </button>
+            )}
+          </div>
 
-          <h1 className="text-xl font-semibold" style={{ color: "var(--admin-text)" }}>
-            {lead?.name}
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--admin-text-muted)" }}>
-            {lead?.email}
-          </p>
+          {isEditing ? (
+            <form
+              className="mt-6 space-y-4"
+              onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Name *</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                    required
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Email *</label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                    required
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Phone</label>
+                  <input
+                    type="tel"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Business owner</label>
+                  <input
+                    type="text"
+                    value={editForm.business_owner_name}
+                    onChange={(e) => setEditForm((p) => ({ ...p, business_owner_name: e.target.value }))}
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>City</label>
+                  <input
+                    type="text"
+                    value={editForm.city}
+                    onChange={(e) => setEditForm((p) => ({ ...p, city: e.target.value }))}
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Industry</label>
+                  <input
+                    type="text"
+                    value={editForm.industry}
+                    onChange={(e) => setEditForm((p) => ({ ...p, industry: e.target.value }))}
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Service</label>
+                  <select
+                    value={editForm.service}
+                    onChange={(e) => setEditForm((p) => ({ ...p, service: e.target.value }))}
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  >
+                    {SERVICE_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Package / price</label>
+                  <input
+                    type="text"
+                    value={editForm.package_price_display}
+                    onChange={(e) => setEditForm((p) => ({ ...p, package_price_display: e.target.value }))}
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                    placeholder="e.g. 397 € / mėn."
+                  />
+                </div>
+              </div>
+              {error && <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-50"
+                  style={{ background: "var(--admin-accent)", color: "var(--admin-bg)" }}
+                >
+                  {saving ? "Saving…" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsEditing(false); setError(null); }}
+                  disabled={saving}
+                  className="rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50"
+                  style={{ borderColor: "var(--admin-border)", color: "var(--admin-text-muted)" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <h1 className="text-xl font-semibold" style={{ color: "var(--admin-text)" }}>
+                {lead?.name}
+              </h1>
+              <p className="mt-1 text-sm" style={{ color: "var(--admin-text-muted)" }}>
+                {lead?.email}
+              </p>
 
-          <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+              <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
             {lead?.phone && (
               <div className="flex flex-col gap-0.5">
                 <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Phone</dt>
@@ -227,6 +419,12 @@ export default function LeadDetailPage() {
               <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>City</dt>
               <dd style={{ color: "var(--admin-text)" }}>{lead?.city}</dd>
             </div>
+            {lead?.outreach_email && (
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Sent from email</dt>
+                <dd style={{ color: "var(--admin-text)" }}>{lead.outreach_email}</dd>
+              </div>
+            )}
             <div className="flex flex-col gap-0.5">
               <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Industry</dt>
               <dd style={{ color: "var(--admin-text)" }}>{lead?.industry}</dd>
@@ -258,6 +456,8 @@ export default function LeadDetailPage() {
               </div>
             )}
           </dl>
+            </>
+          )}
         </div>
 
         {isUnclaimed ? (

@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, Calendar, ChevronUp, ChevronDown, Inbox, AlertCircle, Loader2 } from "lucide-react";
+import { Search, Filter, Calendar, ChevronUp, ChevronDown, Inbox, AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 type Submission = {
   id: string;
@@ -34,6 +35,8 @@ export default function ClientRequestsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<
     NotificationPermission | "unsupported"
   >("default");
@@ -229,32 +232,75 @@ export default function ClientRequestsPage() {
     setSortDirection("desc");
   };
 
+  const openDeleteConfirm = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDeleteConfirmId(id);
+  }, []);
+
+  const performDelete = useCallback(async () => {
+    const id = deleteConfirmId;
+    if (!id) return;
+    setDeletingId(id);
+    setError(null);
+    const { data: deleted, error } = await supabase
+      .from("intake_submissions")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    setDeletingId(null);
+    setDeleteConfirmId(null);
+    if (error) {
+      setError(error.message || "Failed to delete.");
+      return;
+    }
+    if (!deleted?.length) {
+      setError("Delete was not allowed. You may need to be logged in as admin.");
+      return;
+    }
+    setData((prev) => prev.filter((item) => item.id !== id));
+  }, [deleteConfirmId]);
+
+  const closeDeleteConfirm = useCallback(() => {
+    setDeleteConfirmId(null);
+  }, []);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
+      <ConfirmDialog
+        open={!!deleteConfirmId}
+        onClose={closeDeleteConfirm}
+        onConfirm={performDelete}
+        title="Delete submission?"
+        message="Delete this submission? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={deletingId === deleteConfirmId}
+      />
       {notificationPermission !== "granted" &&
         notificationPermission !== "unsupported" && (
           <div
-            className="rounded-xl border px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+            className="rounded-md border px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
             style={{
               borderColor: "var(--admin-border)",
               background: "var(--admin-panel)",
-              boxShadow: "var(--admin-shadow)",
             }}
           >
             <div className="text-sm" style={{ color: "var(--admin-text)" }}>
-              <p className="font-medium">Enable instant lead alerts</p>
+              <p className="font-medium text-xs uppercase tracking-wider" style={{ color: "var(--admin-warning)" }}>Alert</p>
               <p className="text-xs mt-0.5" style={{ color: "var(--admin-text-muted)" }}>
-                Allow notifications so you hear a system sound the moment a new lead arrives.
+                Enable notifications to receive instant alerts when new leads arrive.
               </p>
             </div>
-            <div className="flex gap-2 mt-2 sm:mt-0">
+            <div className="flex gap-2 mt-2 sm:mt-0 shrink-0">
               <button
                 type="button"
                 onClick={requestNotificationPermission}
-                className="rounded-lg px-3 py-2 text-xs font-medium"
+                className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
                 style={{
                   background: "var(--admin-accent)",
-                  color: "#020617",
+                  color: "#ffffff",
                 }}
               >
                 Enable alerts
@@ -263,20 +309,20 @@ export default function ClientRequestsPage() {
           </div>
         )}
       {/* Header + metric */}
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
+          <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
             Client Requests
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm" style={{ color: "var(--admin-text-muted)" }}>
-            Available intake submissions — unclaimed leads you can take. Review by city, industry and service.
+          <p className="mt-0.5 max-w-xl text-xs" style={{ color: "var(--admin-text-muted)" }}>
+            Unclaimed intake submissions — review by city, industry and service.
           </p>
         </div>
-        <div className="admin-metric flex min-w-[120px] flex-col rounded-xl px-5 py-4">
+        <div className="admin-metric flex items-center gap-4 rounded-md px-4 py-2.5 tabular-nums">
           <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
             Total
           </span>
-          <span className="mt-1 text-2xl font-semibold tabular-nums">
+          <span className="text-xl font-semibold">
             {filtered.length}
           </span>
         </div>
@@ -284,29 +330,28 @@ export default function ClientRequestsPage() {
 
       {/* Filters: collapsed by default */}
       <section
-        className="rounded-xl border overflow-hidden"
+        className="rounded-md border overflow-hidden"
         style={{
           borderColor: "var(--admin-border)",
           background: "var(--admin-panel)",
-          boxShadow: "var(--admin-shadow)",
         }}
       >
         <button
           type="button"
           onClick={() => setFiltersOpen((o) => !o)}
-          className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left text-sm transition-colors hover:bg-[var(--admin-bg-elevated)]"
+          className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left text-xs transition-colors hover:bg-[var(--admin-bg-elevated)]"
           style={{ color: "var(--admin-text-muted)" }}
         >
-          <span className="inline-flex items-center gap-2">
-            <Filter className="h-4 w-4 shrink-0" />
+          <span className="inline-flex items-center gap-2 uppercase tracking-wider font-medium">
+            <Filter className="h-3.5 w-3.5 shrink-0" />
             Filters
             {(search || cityFilter !== "all" || industryFilter !== "all" || serviceFilter !== "all" || fromDate || toDate) && (
-              <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "var(--admin-accent-dim)", color: "var(--admin-accent)" }}>
+              <span className="rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "var(--admin-accent-dim)", color: "var(--admin-accent)" }}>
                 Active
               </span>
             )}
           </span>
-          {filtersOpen ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+          {filtersOpen ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
         </button>
         {filtersOpen && (
           <div className="border-t px-4 py-4 space-y-4" style={{ borderColor: "var(--admin-border)" }}>
@@ -384,7 +429,7 @@ export default function ClientRequestsPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="rounded-lg border px-3 py-2 text-xs font-medium transition-colors hover:border-[var(--admin-border-hover)] hover:bg-[var(--admin-bg-elevated)]"
+                className="rounded-md border px-3 py-1.5 text-xs font-medium transition-colors hover:border-[var(--admin-border-hover)] hover:bg-[var(--admin-bg-elevated)]"
                 style={{ borderColor: "var(--admin-border)", color: "var(--admin-text-muted)" }}
               >
                 Clear filters
@@ -396,11 +441,10 @@ export default function ClientRequestsPage() {
 
       {/* Table */}
       <section
-        className="rounded-xl border overflow-hidden"
+        className="rounded-md border overflow-hidden"
         style={{
           borderColor: "var(--admin-border)",
           background: "var(--admin-panel)",
-          boxShadow: "var(--admin-shadow)",
         }}
       >
         <div
@@ -446,109 +490,220 @@ export default function ClientRequestsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr
-                  className="text-left text-xs font-medium uppercase tracking-wider"
-                  style={{ color: "var(--admin-text-muted)", background: "var(--admin-bg-elevated)" }}
+          <>
+            {/* ── MOBILE CARDS (below md) ── */}
+            <div className="md:hidden divide-y" style={{ borderColor: "var(--admin-border)" }}>
+              {filtered.map((item) => (
+                <div
+                  key={item.id}
+                  className="px-4 py-4"
+                  style={{ borderBottomColor: "var(--admin-border)" }}
                 >
-                  <th
-                    className="cursor-pointer select-none px-5 py-3.5"
-                    onClick={() => toggleSort("name")}
+                  {/* Top: name + email */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--admin-text)" }}>
+                        {item.name}
+                      </p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--admin-text-muted)" }}>
+                        {item.email}
+                      </p>
+                    </div>
+                    {item.package_price_display && (
+                      <span
+                        className="shrink-0 text-sm font-semibold tabular-nums"
+                        style={{ color: "var(--admin-text)" }}
+                      >
+                        {item.package_price_display}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Middle: label-value grid */}
+                  <div
+                    className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md px-3 py-2.5 mb-3"
+                    style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
                   >
-                    <span className="inline-flex items-center gap-1">
-                      Name
-                      {sortKey === "name" ? (
-                        sortDirection === "asc" ? (
-                          <ChevronUp className="h-3.5 w-3.5" style={{ color: "var(--admin-accent)" }} />
-                        ) : (
-                          <ChevronDown className="h-3.5 w-3.5" style={{ color: "var(--admin-accent)" }} />
-                        )
-                      ) : null}
-                    </span>
-                  </th>
-                  <th className="px-5 py-3.5">Email</th>
-                  <th className="px-5 py-3.5">City</th>
-                  <th className="px-5 py-3.5">Industry</th>
-                  <th className="px-5 py-3.5">Service</th>
-                  <th
-                    className="cursor-pointer select-none px-5 py-3.5 text-right"
-                    onClick={() => toggleSort("package_price_display")}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      Price
-                      {sortKey === "package_price_display" ? (
-                        sortDirection === "asc" ? (
-                          <ChevronUp className="h-3.5 w-3.5" style={{ color: "var(--admin-accent)" }} />
-                        ) : (
-                          <ChevronDown className="h-3.5 w-3.5" style={{ color: "var(--admin-accent)" }} />
-                        )
-                      ) : null}
-                    </span>
-                  </th>
-                  <th
-                    className="cursor-pointer select-none px-5 py-3.5 text-right"
-                    onClick={() => toggleSort("created_at")}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      Submitted at
-                      {sortKey === "created_at" ? (
-                        sortDirection === "asc" ? (
-                          <ChevronUp className="h-3.5 w-3.5" style={{ color: "var(--admin-accent)" }} />
-                        ) : (
-                          <ChevronDown className="h-3.5 w-3.5" style={{ color: "var(--admin-accent)" }} />
-                        )
-                      ) : null}
-                    </span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((item, i) => (
-                  <tr
-                    key={item.id}
-                    role="button"
-                    tabIndex={0}
-                    className="admin-table-row cursor-pointer transition-colors"
-                    style={{
-                      borderBottom: "1px solid var(--admin-border)",
-                      background: i % 2 === 1 ? "var(--admin-bg-elevated)" : "transparent",
-                    }}
-                    onClick={() => router.push(`/admin/leads/${item.id}`)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        router.push(`/admin/leads/${item.id}`);
-                      }
-                    }}
-                  >
-                    <td className="px-5 py-3.5 font-medium" style={{ color: "var(--admin-text)" }}>
-                      {item.name}
-                    </td>
-                    <td className="px-5 py-3.5 tabular-nums" style={{ color: "var(--admin-text-muted)" }}>
-                      {item.email}
-                    </td>
-                    <td className="px-5 py-3.5" style={{ color: "var(--admin-text)" }}>
-                      {item.city}
-                    </td>
-                    <td className="px-5 py-3.5" style={{ color: "var(--admin-text)" }}>
-                      {item.industry}
-                    </td>
-                    <td className="px-5 py-3.5" style={{ color: "var(--admin-text)" }}>
-                      {item.service}
-                    </td>
-                    <td className="px-5 py-3.5 text-right tabular-nums font-medium" style={{ color: "var(--admin-text)" }}>
-                      {item.package_price_display || "—"}
-                    </td>
-                    <td className="px-5 py-3.5 text-right tabular-nums text-xs" style={{ color: "var(--admin-text-muted)" }}>
+                    {([
+                      ["City", item.city],
+                      ["Industry", item.industry],
+                      ["Service", item.service],
+                    ] as [string, string][]).map(([label, val]) => (
+                      <div key={label}>
+                        <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>
+                          {label}
+                        </p>
+                        <p className="text-xs" style={{ color: "var(--admin-text)" }}>
+                          {val || "—"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Bottom: date + actions */}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[11px] tabular-nums" style={{ color: "var(--admin-text-muted)" }}>
                       {formatDate(item.created_at)}
-                    </td>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => openDeleteConfirm(e, item.id)}
+                        disabled={deletingId === item.id}
+                        className="inline-flex items-center justify-center rounded p-1.5 transition-colors disabled:opacity-50"
+                        style={{ color: "var(--admin-text-muted)" }}
+                        title="Delete"
+                      >
+                        {deletingId === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/leads/${item.id}`)}
+                        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                        style={{
+                          background: "var(--admin-accent)",
+                          color: "#ffffff",
+                        }}
+                      >
+                        View Lead
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── DESKTOP TABLE (md and up) ── */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr
+                    className="text-left text-[10px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--admin-text-muted)", background: "var(--admin-bg)" }}
+                  >
+                    <th
+                      className="cursor-pointer select-none px-4 py-2.5"
+                      onClick={() => toggleSort("name")}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        Name
+                        {sortKey === "name" ? (
+                          sortDirection === "asc" ? (
+                            <ChevronUp className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
+                          )
+                        ) : (
+                          <ChevronDown className="h-3 w-3 opacity-25" />
+                        )}
+                      </span>
+                    </th>
+                    <th className="px-4 py-2.5">Email</th>
+                    <th className="px-4 py-2.5">City</th>
+                    <th className="px-4 py-2.5">Industry</th>
+                    <th className="px-4 py-2.5">Service</th>
+                    <th
+                      className="cursor-pointer select-none px-4 py-2.5 text-right"
+                      onClick={() => toggleSort("package_price_display")}
+                    >
+                      <span className="inline-flex items-center justify-end gap-1">
+                        Price
+                        {sortKey === "package_price_display" ? (
+                          sortDirection === "asc" ? (
+                            <ChevronUp className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
+                          )
+                        ) : (
+                          <ChevronDown className="h-3 w-3 opacity-25" />
+                        )}
+                      </span>
+                    </th>
+                    <th
+                      className="cursor-pointer select-none px-4 py-2.5 text-right"
+                      onClick={() => toggleSort("created_at")}
+                    >
+                      <span className="inline-flex items-center justify-end gap-1">
+                        Submitted
+                        {sortKey === "created_at" ? (
+                          sortDirection === "asc" ? (
+                            <ChevronUp className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
+                          )
+                        ) : (
+                          <ChevronDown className="h-3 w-3 opacity-25" />
+                        )}
+                      </span>
+                    </th>
+                    <th className="w-10 px-4 py-2.5 text-right" aria-label="Actions" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filtered.map((item) => (
+                    <tr
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      className="admin-table-row cursor-pointer transition-colors"
+                      style={{
+                        borderBottom: "1px solid var(--admin-border)",
+                      }}
+                      onClick={() => router.push(`/admin/leads/${item.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          router.push(`/admin/leads/${item.id}`);
+                        }
+                      }}
+                    >
+                      <td className="px-4 py-2 font-medium text-sm" style={{ color: "var(--admin-text)" }}>
+                        {item.name}
+                      </td>
+                      <td className="px-4 py-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>
+                        {item.email}
+                      </td>
+                      <td className="px-4 py-2 text-sm" style={{ color: "var(--admin-text)" }}>
+                        {item.city}
+                      </td>
+                      <td className="px-4 py-2 text-sm" style={{ color: "var(--admin-text)" }}>
+                        {item.industry}
+                      </td>
+                      <td className="px-4 py-2 text-sm" style={{ color: "var(--admin-text)" }}>
+                        {item.service}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-sm font-semibold" style={{ color: "var(--admin-text)" }}>
+                        {item.package_price_display || "—"}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-xs whitespace-nowrap" style={{ color: "var(--admin-text-muted)" }}>
+                        {formatDate(item.created_at)}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => openDeleteConfirm(e, item.id)}
+                          disabled={deletingId === item.id}
+                          className="inline-flex items-center justify-center rounded p-1.5 text-[var(--admin-text-muted)] hover:bg-[var(--admin-danger)]/10 hover:text-[var(--admin-danger)] disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                          title="Delete submission"
+                          aria-label="Delete submission"
+                        >
+                          {deletingId === item.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </div>
