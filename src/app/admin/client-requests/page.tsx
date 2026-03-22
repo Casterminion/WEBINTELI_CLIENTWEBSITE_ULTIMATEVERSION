@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Filter, Calendar, ChevronUp, ChevronDown, Inbox, AlertCircle, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 type Submission = {
@@ -21,6 +22,7 @@ type SortKey = "created_at" | "name" | "package_price_display";
 type SortDirection = "asc" | "desc";
 
 export default function ClientRequestsPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [data, setData] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,7 @@ export default function ClientRequestsPage() {
       if (!isMounted) return;
 
       if (error) {
-        setError(error.message || "Unable to load submissions.");
+        setError(error.message || (t.admin?.loadingSubmissions ?? "Unable to load submissions."));
       } else {
         setData((data ?? []) as Submission[]);
       }
@@ -108,7 +110,7 @@ export default function ClientRequestsPage() {
           if (Notification.permission !== "granted") return;
 
           try {
-            const title = row.name ? `New lead: ${row.name}` : "New lead";
+            const title = row.name ? `${t.admin?.newLead ?? "New lead"}: ${row.name}` : (t.admin?.newLead ?? "New lead");
             const bodyParts: string[] = [];
             if (row.city) bodyParts.push(row.city);
             if (row.service) bodyParts.push(row.service);
@@ -134,7 +136,7 @@ export default function ClientRequestsPage() {
       isMounted = false;
       void supabase.removeChannel(channel);
     };
-  }, [router]);
+  }, [router, t]);
 
   const cities = useMemo(
     () => Array.from(new Set(data.map((d) => d.city))).filter(Boolean).sort(),
@@ -251,7 +253,7 @@ export default function ClientRequestsPage() {
     setDeletingId(null);
     setDeleteConfirmId(null);
     if (error) {
-      setError(error.message || "Failed to delete.");
+      setError(error.message || (t.admin?.delete ?? "Failed to delete."));
       return;
     }
     if (!deleted?.length) {
@@ -271,10 +273,11 @@ export default function ClientRequestsPage() {
         open={!!deleteConfirmId}
         onClose={closeDeleteConfirm}
         onConfirm={performDelete}
-        title="Delete submission?"
-        message="Delete this submission? This cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={t.admin?.deleteConfirmTitle ?? "Delete submission?"}
+        message={t.admin?.deleteConfirmMessage ?? "Delete this submission? This cannot be undone."}
+        confirmLabel={t.admin?.delete ?? "Delete"}
+        cancelLabel={t.admin?.cancel ?? "Cancel"}
+        loadingLabel={t.admin?.deleting ?? "Deleting…"}
         variant="danger"
         loading={deletingId === deleteConfirmId}
       />
@@ -288,9 +291,9 @@ export default function ClientRequestsPage() {
             }}
           >
             <div className="text-sm" style={{ color: "var(--admin-text)" }}>
-              <p className="font-medium text-xs uppercase tracking-wider" style={{ color: "var(--admin-warning)" }}>Alert</p>
+              <p className="font-medium text-xs uppercase tracking-wider" style={{ color: "var(--admin-warning)" }}>{t.admin?.alert ?? "Alert"}</p>
               <p className="text-xs mt-0.5" style={{ color: "var(--admin-text-muted)" }}>
-                Enable notifications to receive instant alerts when new leads arrive.
+                {t.admin?.enableNotifications ?? "Enable notifications to receive instant alerts when new leads arrive."}
               </p>
             </div>
             <div className="flex gap-2 mt-2 sm:mt-0 shrink-0">
@@ -303,7 +306,7 @@ export default function ClientRequestsPage() {
                   color: "#ffffff",
                 }}
               >
-                Enable alerts
+                {t.admin?.enableAlerts ?? "Enable alerts"}
               </button>
             </div>
           </div>
@@ -312,15 +315,15 @@ export default function ClientRequestsPage() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
-            Client Requests
+            {t.admin?.clientRequests ?? "Client Requests"}
           </h1>
           <p className="mt-0.5 max-w-xl text-xs" style={{ color: "var(--admin-text-muted)" }}>
-            Unclaimed intake submissions — review by city, industry and service.
+            {t.admin?.unclaimedSubmissions ?? "Unclaimed intake submissions — review by city, industry and service."}
           </p>
         </div>
         <div className="admin-metric flex items-center gap-4 rounded-md px-4 py-2.5 tabular-nums">
           <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
-            Total
+            {t.admin?.total ?? "Total"}
           </span>
           <span className="text-xl font-semibold">
             {filtered.length}
@@ -344,10 +347,10 @@ export default function ClientRequestsPage() {
         >
           <span className="inline-flex items-center gap-2 uppercase tracking-wider font-medium">
             <Filter className="h-3.5 w-3.5 shrink-0" />
-            Filters
+            {t.admin?.filters ?? "Filters"}
             {(search || cityFilter !== "all" || industryFilter !== "all" || serviceFilter !== "all" || fromDate || toDate) && (
               <span className="rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "var(--admin-accent-dim)", color: "var(--admin-accent)" }}>
-                Active
+                {t.admin?.active ?? "Active"}
               </span>
             )}
           </span>
@@ -357,52 +360,52 @@ export default function ClientRequestsPage() {
           <div className="border-t px-4 py-4 space-y-4" style={{ borderColor: "var(--admin-border)" }}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>Search</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.search ?? "Search"}</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--admin-text-muted)" }} />
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Name, email, city…"
+                    placeholder={t.admin?.searchPlaceholder ?? "Name, email, city…"}
                     className="admin-input w-full rounded-lg py-2 pl-9 pr-3 text-sm"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>City</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.city ?? "City"}</label>
                 <select
                   value={cityFilter}
                   onChange={(e) => setCityFilter(e.target.value)}
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="all">All cities</option>
+                  <option value="all">{t.admin?.allCities ?? "All cities"}</option>
                   {cities.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>Industry</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.industry ?? "Industry"}</label>
                 <select
                   value={industryFilter}
                   onChange={(e) => setIndustryFilter(e.target.value)}
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="all">All industries</option>
+                  <option value="all">{t.admin?.allIndustries ?? "All industries"}</option>
                   {industries.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>Service</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.service ?? "Service"}</label>
                 <select
                   value={serviceFilter}
                   onChange={(e) => setServiceFilter(e.target.value)}
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="all">All services</option>
+                  <option value="all">{t.admin?.allServices ?? "All services"}</option>
                   {services.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -432,7 +435,7 @@ export default function ClientRequestsPage() {
                 className="rounded-md border px-3 py-1.5 text-xs font-medium transition-colors hover:border-[var(--admin-border-hover)] hover:bg-[var(--admin-bg-elevated)]"
                 style={{ borderColor: "var(--admin-border)", color: "var(--admin-text-muted)" }}
               >
-                Clear filters
+                {t.admin?.clearFilters ?? "Clear filters"}
               </button>
             </div>
           </div>
@@ -451,14 +454,14 @@ export default function ClientRequestsPage() {
           className="flex items-center justify-between border-b px-5 py-3 text-[10px] font-medium uppercase tracking-wider"
           style={{ borderColor: "var(--admin-border)", color: "var(--admin-text-muted)" }}
         >
-          <span>Submissions</span>
+          <span>{t.admin?.submissions ?? "Submissions"}</span>
           <span className="hidden sm:inline">
-            Sorted by{" "}
+            {t.admin?.sortedBy ?? "Sorted by"}{" "}
             {sortKey === "created_at"
-              ? "Submitted at"
+              ? (t.admin?.submitted ?? "Submitted at")
               : sortKey === "name"
-              ? "Name"
-              : "Price"}{" "}
+              ? (t.admin?.name ?? "Name")
+              : (t.admin?.price ?? "Price")}{" "}
             ({sortDirection})
           </span>
         </div>
@@ -467,7 +470,7 @@ export default function ClientRequestsPage() {
           <div className="flex flex-col items-center justify-center gap-4 px-5 py-16">
             <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--admin-accent)" }} />
             <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>
-              Loading submissions…
+              {t.admin?.loadingSubmissions ?? "Loading submissions…"}
             </p>
             <div className="w-full space-y-3 px-5 pb-5">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -486,7 +489,7 @@ export default function ClientRequestsPage() {
           <div className="flex flex-col items-center justify-center gap-3 px-5 py-16">
             <Inbox className="h-12 w-12" style={{ color: "var(--admin-text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>
-              No submissions match your filters.
+              {t.admin?.noSubmissions ?? "No submissions match your filters."}
             </p>
           </div>
         ) : (
@@ -525,9 +528,9 @@ export default function ClientRequestsPage() {
                     style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
                   >
                     {([
-                      ["City", item.city],
-                      ["Industry", item.industry],
-                      ["Service", item.service],
+                      [t.admin?.city ?? "City", item.city],
+                      [t.admin?.industry ?? "Industry", item.industry],
+                      [t.admin?.service ?? "Service", item.service],
                     ] as [string, string][]).map(([label, val]) => (
                       <div key={label}>
                         <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>
@@ -552,7 +555,7 @@ export default function ClientRequestsPage() {
                         disabled={deletingId === item.id}
                         className="inline-flex items-center justify-center rounded p-1.5 transition-colors disabled:opacity-50"
                         style={{ color: "var(--admin-text-muted)" }}
-                        title="Delete"
+                        title={t.admin?.delete ?? "Delete"}
                       >
                         {deletingId === item.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -569,7 +572,7 @@ export default function ClientRequestsPage() {
                           color: "#ffffff",
                         }}
                       >
-                        View Lead
+                        {t.admin?.viewLead ?? "View Lead"}
                       </button>
                     </div>
                   </div>
@@ -590,7 +593,7 @@ export default function ClientRequestsPage() {
                       onClick={() => toggleSort("name")}
                     >
                       <span className="inline-flex items-center gap-1">
-                        Name
+                        {t.admin?.name ?? "Name"}
                         {sortKey === "name" ? (
                           sortDirection === "asc" ? (
                             <ChevronUp className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
@@ -602,16 +605,16 @@ export default function ClientRequestsPage() {
                         )}
                       </span>
                     </th>
-                    <th className="px-4 py-2.5">Email</th>
-                    <th className="px-4 py-2.5">City</th>
-                    <th className="px-4 py-2.5">Industry</th>
-                    <th className="px-4 py-2.5">Service</th>
+                    <th className="px-4 py-2.5">{t.admin?.email ?? "Email"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.city ?? "City"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.industry ?? "Industry"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.service ?? "Service"}</th>
                     <th
                       className="cursor-pointer select-none px-4 py-2.5 text-right"
                       onClick={() => toggleSort("package_price_display")}
                     >
                       <span className="inline-flex items-center justify-end gap-1">
-                        Price
+                        {t.admin?.price ?? "Price"}
                         {sortKey === "package_price_display" ? (
                           sortDirection === "asc" ? (
                             <ChevronUp className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
@@ -628,7 +631,7 @@ export default function ClientRequestsPage() {
                       onClick={() => toggleSort("created_at")}
                     >
                       <span className="inline-flex items-center justify-end gap-1">
-                        Submitted
+                        {t.admin?.submitted ?? "Submitted"}
                         {sortKey === "created_at" ? (
                           sortDirection === "asc" ? (
                             <ChevronUp className="h-3 w-3" style={{ color: "var(--admin-accent)" }} />
@@ -688,8 +691,8 @@ export default function ClientRequestsPage() {
                           onClick={(e) => openDeleteConfirm(e, item.id)}
                           disabled={deletingId === item.id}
                           className="inline-flex items-center justify-center rounded p-1.5 text-[var(--admin-text-muted)] hover:bg-[var(--admin-danger)]/10 hover:text-[var(--admin-danger)] disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                          title="Delete submission"
-                          aria-label="Delete submission"
+                          title={t.admin?.deleteSubmission ?? "Delete submission"}
+                          aria-label={t.admin?.deleteSubmission ?? "Delete submission"}
                         >
                           {deletingId === item.id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />

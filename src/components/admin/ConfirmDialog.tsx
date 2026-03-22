@@ -11,6 +11,7 @@ type Props = {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  loadingLabel?: string;
   variant?: "danger" | "default";
   loading?: boolean;
 };
@@ -23,6 +24,7 @@ export default function ConfirmDialog({
   message,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  loadingLabel = "Deleting…",
   variant = "danger",
   loading = false,
 }: Props) {
@@ -113,7 +115,7 @@ export default function ConfirmDialog({
               color: "#fff",
             }}
           >
-            {loading ? "Deleting…" : confirmLabel}
+            {loading ? loadingLabel : confirmLabel}
           </button>
           <button
             ref={cancelRef}

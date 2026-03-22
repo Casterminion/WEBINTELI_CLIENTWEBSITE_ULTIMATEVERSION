@@ -197,20 +197,24 @@ const Navbar: React.FC = () => {
           <button
             type="button"
             className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.mobileMenuOpen : ''}`}
-            onClick={() => {
-              const next = !mobileMenuOpen;
-              setMobileMenuOpen(next);
-            }}
-            aria-label="Toggle navigation"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
           >
-            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" aria-hidden>
-              <path d="M5 7H25M5 15H20M5 23H10" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <span className={styles.mobileMenuIcon}>
+              <span className={styles.mobileMenuBar} />
+              <span className={styles.mobileMenuBar} />
+              <span className={styles.mobileMenuBar} />
+            </span>
           </button>
         </div>
       </div>
 
+      <div
+        className={`${styles.mobileOverlay} ${mobileMenuOpen ? styles.mobileOverlayOpen : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+        aria-hidden="true"
+      />
       <div className={`${styles.mobilePanel} ${mobileMenuOpen ? styles.mobilePanelOpen : ''}`}>
         <nav className={styles.mobileNav}>
           {navItems.map(({ label, href }) => (

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Inbox, Loader2, Check, Calendar, ListTodo } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type TaskRow = {
   id: string;
@@ -24,6 +25,7 @@ function todayISODate(): string {
 type ViewMode = "all" | "today" | "upcoming";
 
 export default function TasksPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,15 +105,15 @@ export default function TasksPage() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
-            Tasks
+            {t.admin?.tasks ?? "Tasks"}
           </h1>
           <p className="mt-0.5 max-w-xl text-xs" style={{ color: "var(--admin-text-muted)" }}>
-            All follow-up and other tasks. Click a row to open the lead.
+            {t.admin?.tasksDescription ?? "All follow-up and other tasks. Click a row to open the lead."}
           </p>
         </div>
         <div className="admin-metric flex items-center gap-4 rounded-md px-4 py-2.5 tabular-nums">
           <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
-            Total
+            {t.admin?.total ?? "Total"}
           </span>
           <span className="text-xl font-semibold">
             {filteredTasks.length}
@@ -126,7 +128,7 @@ export default function TasksPage() {
           background: "var(--admin-panel)",
         }}
       >
-        <span className="text-[10px] font-medium uppercase tracking-wider mr-2" style={{ color: "var(--admin-text-muted)" }}>View:</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider mr-2" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.view ?? "View"}:</span>
         <button
           type="button"
           onClick={() => setViewMode("today")}
@@ -138,7 +140,7 @@ export default function TasksPage() {
           }}
         >
           <Calendar className="h-3.5 w-3.5" />
-          Today
+          {t.admin?.today ?? "Today"}
         </button>
         <button
           type="button"
@@ -151,7 +153,7 @@ export default function TasksPage() {
           }}
         >
           <Calendar className="h-3.5 w-3.5" />
-          Upcoming
+          {t.admin?.upcoming ?? "Upcoming"}
         </button>
         <button
           type="button"
@@ -164,7 +166,7 @@ export default function TasksPage() {
           }}
         >
           <ListTodo className="h-3.5 w-3.5" />
-          All tasks
+          {t.admin?.allTasks ?? "All tasks"}
         </button>
       </div>
 
@@ -178,7 +180,7 @@ export default function TasksPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-4 px-5 py-16">
             <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--admin-accent)" }} />
-            <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>Loading tasks…</p>
+            <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.loadingTasks ?? "Loading tasks…"}</p>
           </div>
         ) : error ? (
           <div className="px-5 py-16 text-sm" style={{ color: "var(--admin-accent)" }}>{error}</div>
@@ -186,7 +188,7 @@ export default function TasksPage() {
           <div className="flex flex-col items-center justify-center gap-3 px-5 py-16">
             <Inbox className="h-12 w-12" style={{ color: "var(--admin-text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>
-              {tasks.length === 0 ? "No tasks yet." : `No tasks in ${viewMode === "today" ? "today" : "upcoming"}.`}
+              {tasks.length === 0 ? (t.admin?.noTasks ?? "No tasks yet.") : (viewMode === "today" ? (t.admin?.noTasksToday ?? "No tasks in today.") : (t.admin?.noTasksUpcoming ?? "No tasks in upcoming."))}
             </p>
           </div>
         ) : (
@@ -238,11 +240,11 @@ export default function TasksPage() {
                     style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
                   >
                     <div>
-                      <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>Due date</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.dueDate ?? "Due date"}</p>
                       <p className="text-xs tabular-nums" style={{ color: "var(--admin-text)" }}>{formatDate(task.due_date)}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>Type</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.type ?? "Type"}</p>
                       <p className="text-xs capitalize" style={{ color: "var(--admin-text)" }}>{task.task_type.replace("_", " ")}</p>
                     </div>
                   </div>
@@ -255,7 +257,7 @@ export default function TasksPage() {
                       className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
                       style={{ background: "var(--admin-accent)", color: "#ffffff" }}
                     >
-                      Open Lead
+                      {t.admin?.openLead ?? "Open Lead"}
                     </button>
                   </div>
                 </div>
@@ -270,10 +272,10 @@ export default function TasksPage() {
                     className="text-left text-[10px] font-semibold uppercase tracking-widest"
                     style={{ color: "var(--admin-text-muted)", background: "var(--admin-bg)" }}
                   >
-                    <th className="px-4 py-2.5 w-10">Done</th>
-                    <th className="px-4 py-2.5">Due date</th>
-                    <th className="px-4 py-2.5">Lead</th>
-                    <th className="px-4 py-2.5">Type</th>
+                    <th className="px-4 py-2.5 w-10">{t.admin?.done ?? "Done"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.dueDate ?? "Due date"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.lead ?? "Lead"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.type ?? "Type"}</th>
                   </tr>
                 </thead>
                 <tbody>

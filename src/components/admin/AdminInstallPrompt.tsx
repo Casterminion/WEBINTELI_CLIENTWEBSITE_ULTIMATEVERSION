@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -8,6 +9,7 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 export default function AdminInstallPrompt() {
+  const { t } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -64,10 +66,10 @@ export default function AdminInstallPrompt() {
     >
       <div>
         <p className="text-sm font-medium" style={{ color: "var(--admin-text)" }}>
-          Install Webinteli Admin on your phone
+          {t.admin?.installTitle ?? "Install Webinteli Admin on your phone"}
         </p>
         <p className="text-xs mt-0.5" style={{ color: "var(--admin-text-muted)" }}>
-          Add this dashboard to your home screen for one-tap access and faster lead calling.
+          {t.admin?.installDescription ?? "Add this dashboard to your home screen for one-tap access and faster lead calling."}
         </p>
       </div>
       <div className="flex gap-2 mt-2 sm:mt-0">
@@ -80,7 +82,7 @@ export default function AdminInstallPrompt() {
             color: "#020617",
           }}
         >
-          Install app
+          {t.admin?.installApp ?? "Install app"}
         </button>
         <button
           type="button"
@@ -93,7 +95,7 @@ export default function AdminInstallPrompt() {
             borderStyle: "solid",
           }}
         >
-          Not now
+          {t.admin?.notNow ?? "Not now"}
         </button>
       </div>
     </div>

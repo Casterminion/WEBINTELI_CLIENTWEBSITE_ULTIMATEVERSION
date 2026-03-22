@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AdminLoginPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -23,7 +25,7 @@ export default function AdminLoginPage() {
     });
 
     if (signInError) {
-      setError(signInError.message || "Unable to sign in. Please check your details.");
+      setError(signInError.message || (t.admin?.signInError ?? "Unable to sign in. Please check your details."));
       setLoading(false);
       return;
     }
@@ -54,10 +56,10 @@ export default function AdminLoginPage() {
                 Webinteli
               </p>
               <h1 className="mt-3 text-[22px] font-semibold tracking-tight text-[var(--foreground)]">
-                Admin access
+                {t.admin?.adminAccess ?? "Admin access"}
               </h1>
               <p className="mt-2 text-sm text-[var(--muted-foreground)] leading-relaxed max-w-[320px]">
-                Sign in with your Webinteli admin credentials to continue.
+                {t.admin?.signInPrompt ?? "Sign in with your Webinteli admin credentials to continue."}
               </p>
             </div>
 
@@ -67,7 +69,7 @@ export default function AdminLoginPage() {
                   htmlFor="email"
                   className="block text-sm font-medium text-[var(--foreground)]"
                 >
-                  Email
+                  {t.admin?.email ?? "Email"}
                 </label>
                 <input
                   id="email"
@@ -86,7 +88,7 @@ export default function AdminLoginPage() {
                   htmlFor="password"
                   className="block text-sm font-medium text-[var(--foreground)]"
                 >
-                  Password
+                  {t.admin?.password ?? "Password"}
                 </label>
                 <input
                   id="password"
@@ -111,14 +113,14 @@ export default function AdminLoginPage() {
                 disabled={loading}
                 className="w-full mt-1 inline-flex items-center justify-center rounded-xl bg-[var(--primary)] px-4 py-3.5 text-sm font-semibold text-[var(--primary-foreground)] shadow-sm hover:bg-[var(--primary)]/90 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
               >
-                {loading ? "Signing in…" : "Sign in"}
+                {loading ? (t.admin?.signingIn ?? "Signing in…") : (t.admin?.signIn ?? "Sign in")}
               </button>
             </form>
           </div>
         </div>
 
         <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
-          Secure admin area · Authorized access only
+          {t.admin?.secureArea ?? "Secure admin area · Authorized access only"}
         </p>
       </div>
     </div>

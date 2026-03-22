@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import AdminShell from "@/components/admin/AdminShell";
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function AdminLayoutClient({ children }: Props) {
+  const { t } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,7 +55,7 @@ export function AdminLayoutClient({ children }: Props) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)] text-[var(--foreground)]">
         <div className="px-6 py-4 rounded-xl border border-[var(--neutral-border)] shadow-sm bg-[var(--card)]">
-          <p className="text-sm tracking-wide">Loading secure dashboard…</p>
+          <p className="text-sm tracking-wide">{t.admin?.loadingDashboard ?? "Loading secure dashboard…"}</p>
         </div>
       </div>
     );

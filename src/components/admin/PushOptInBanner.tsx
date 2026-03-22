@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const applicationServerKeyBase64 = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY;
 
@@ -17,6 +18,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export default function PushOptInBanner() {
+  const { t } = useLanguage();
   const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -98,10 +100,10 @@ export default function PushOptInBanner() {
     >
       <div>
         <p className="text-sm font-medium" style={{ color: "var(--admin-text)" }}>
-          Enable background lead alerts
+          {t.admin?.pushTitle ?? "Enable background lead alerts"}
         </p>
         <p className="text-xs mt-0.5" style={{ color: "var(--admin-text-muted)" }}>
-          Get push notifications on this device when a new client request comes in.
+          {t.admin?.pushDescription ?? "Get push notifications on this device when a new client request comes in."}
         </p>
       </div>
       <button
@@ -114,7 +116,7 @@ export default function PushOptInBanner() {
           color: "#020617",
         }}
       >
-        {loading ? "Enabling…" : "Enable push alerts"}
+        {loading ? (t.admin?.enabling ?? "Enabling…") : (t.admin?.enablePush ?? "Enable push alerts")}
       </button>
     </div>
   );

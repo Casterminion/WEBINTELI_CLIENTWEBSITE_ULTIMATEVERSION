@@ -1,41 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, AlertCircle, Pencil } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { InlineEditableField } from "@/components/admin/InlineEditableField";
+import { ADMIN_SERVICE_OPTIONS, DEFAULT_ADMIN_SERVICE } from "@/data/adminServiceOptions";
+import { normalizeExternalUrl } from "@/lib/url";
 
-const SERVICE_OPTIONS = ["SEO", "PPC", "Content", "Other"];
-
-const STATUS_OPTIONS = [
-  { value: "contacted", label: "Contacted" },
-  { value: "replies", label: "Replies" },
-  { value: "meeting_agreed", label: "Meeting agreed" },
-  { value: "agreed_to_pay", label: "Agreed to pay" },
-  { value: "sent_agreement", label: "Sent agreement" },
-  { value: "current_client", label: "Current client" },
-  { value: "lost", label: "Lost" },
+const STATUS_VALUES = [
+  { value: "contacted", key: "statusContacted" as const },
+  { value: "replies", key: "statusReplies" as const },
+  { value: "meeting_agreed", key: "statusMeetingAgreed" as const },
+  { value: "agreed_to_pay", key: "statusAgreedToPay" as const },
+  { value: "sent_agreement", key: "statusSentAgreement" as const },
+  { value: "current_client", key: "statusCurrentClient" as const },
+  { value: "lost", key: "statusLost" as const },
 ] as const;
-
-function formatStatus(status: string): string {
-  const opt = STATUS_OPTIONS.find((o) => o.value === status);
-  if (opt) return opt.label;
-  if (status === "new") return "New";
-  return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
-}
-
-type EditForm = {
-  name: string;
-  email: string;
-  phone: string;
-  business_owner_name: string;
-  city: string;
-  industry: string;
-  service: string;
-  package_price_display: string;
-  notes: string;
-};
 
 type Lead = {
   id: string;
@@ -55,6 +38,7 @@ type Lead = {
   claimed_at: string | null;
   outreach_email: string | null;
   notes: string | null;
+  website: string | null;
 };
 
 function getFollowUpDueDates(): string[] {
@@ -74,28 +58,38 @@ function getFollowUpDueDates(): string[] {
   return dates;
 }
 
+function formatStatus(status: string, t: { admin?: Record<string, string> }): string {
+  const opt = STATUS_VALUES.find((o) => o.value === status);
+  if (opt) return t.admin?.[opt.key] ?? opt.value;
+  if (status === "new") return t.admin?.statusNew ?? "New";
+  return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
+}
+
 export default function LeadDetailPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const router = useRouter();
+
+  const STATUS_OPTIONS = useMemo(
+    () => STATUS_VALUES.map((o) => ({ value: o.value, label: t.admin?.[o.key] ?? o.value })),
+    [t]
+  );
   const id = params?.id as string | undefined;
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editForm, setEditForm] = useState<EditForm>({
-    name: "",
-    email: "",
-    phone: "",
-    business_owner_name: "",
-    city: "",
-    industry: "",
-    service: "SEO",
-    package_price_display: "",
-    notes: "",
-  });
+  const [savingField, setSavingField] = useState<string | null>(null);
+
+  const serviceSelectOptions = useMemo(() => {
+    const base = [...ADMIN_SERVICE_OPTIONS] as string[];
+    const v = lead?.service?.trim();
+    if (v && !base.includes(v)) {
+      return [v, ...base];
+    }
+    return base;
+  }, [lead?.service]);
 
   const loadLead = useCallback(async () => {
     if (!id) return;
@@ -107,7 +101,7 @@ export default function LeadDetailPage() {
       .eq("id", id)
       .single();
     if (err) {
-      setError(err.message || "Lead not found.");
+      setError(err.message || (t.admin?.loadingLead ?? "Lead not found."));
       setLead(null);
     } else {
       setLead(data as Lead);
@@ -167,49 +161,35 @@ export default function LeadDetailPage() {
     setUpdatingStatus(false);
   };
 
-  const startEditing = useCallback(() => {
-    if (!lead) return;
-    setEditForm({
-      name: lead.name ?? "",
-      email: lead.email ?? "",
-      phone: lead.phone ?? "",
-      business_owner_name: lead.business_owner_name ?? "",
-      city: lead.city ?? "",
-      industry: lead.industry ?? "",
-      service: lead.service ?? "SEO",
-      package_price_display: lead.package_price_display ?? "",
-      notes: lead.notes ?? "",
-    });
-    setError(null);
-    setIsEditing(true);
-  }, [lead]);
-
-  const handleSaveEdit = async () => {
-    if (!id) return;
-    setSaving(true);
-    setError(null);
-    const { error: err } = await supabase
-      .from("intake_submissions")
-      .update({
-        name: editForm.name.trim(),
-        email: editForm.email.trim(),
-        phone: editForm.phone.trim() || null,
-        business_owner_name: editForm.business_owner_name.trim() || null,
-        city: editForm.city.trim(),
-        industry: editForm.industry.trim(),
-        service: editForm.service.trim() || "SEO",
-        package_price_display: editForm.package_price_display.trim(),
-        notes: editForm.notes.trim() || null,
-      })
-      .eq("id", id);
-    setSaving(false);
-    if (err) {
-      setError(err.message || "Failed to save.");
-      return;
-    }
-    await loadLead();
-    setIsEditing(false);
-  };
+  const saveField = useCallback(
+    async (field: keyof Lead, value: string | null) => {
+      if (!id) return;
+      setSavingField(field);
+      setError(null);
+      const optionalFields = ["phone", "business_owner_name", "notes", "website"];
+      const dbValue =
+        value === null || value.trim() === ""
+          ? optionalFields.includes(field)
+            ? null
+            : field === "package_price_display" || field === "service"
+              ? field === "service"
+                ? DEFAULT_ADMIN_SERVICE
+                : ""
+              : ""
+          : value.trim();
+      const { error: err } = await supabase
+        .from("intake_submissions")
+        .update({ [field]: dbValue })
+        .eq("id", id);
+      setSavingField(null);
+      if (err) {
+        setError(err.message || (t.admin?.saving ?? "Failed to save."));
+        return;
+      }
+      await loadLead();
+    },
+    [id, loadLead]
+  );
 
   const formatDate = (value: string) => {
     const d = new Date(value);
@@ -226,9 +206,9 @@ export default function LeadDetailPage() {
   if (!id) {
     return (
       <div className="space-y-6">
-        <p style={{ color: "var(--admin-text-muted)" }}>Invalid lead ID.</p>
+        <p style={{ color: "var(--admin-text-muted)" }}>{t.admin?.invalidLeadId ?? "Invalid lead ID."}</p>
         <Link href="/admin/client-requests" className="text-sm" style={{ color: "var(--admin-accent)" }}>
-          Back to Client Requests
+          {t.admin?.backToClientRequests ?? "Back to Client Requests"}
         </Link>
       </div>
     );
@@ -238,7 +218,7 @@ export default function LeadDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-16">
         <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--admin-accent)" }} />
-        <p style={{ color: "var(--admin-text-muted)" }}>Loading lead…</p>
+        <p style={{ color: "var(--admin-text-muted)" }}>{t.admin?.loadingLead ?? "Loading lead…"}</p>
       </div>
     );
   }
@@ -251,7 +231,7 @@ export default function LeadDetailPage() {
           <p style={{ color: "var(--admin-text)" }}>{error}</p>
         </div>
         <Link href="/admin/client-requests" className="text-sm" style={{ color: "var(--admin-accent)" }}>
-          Back to Client Requests
+          {t.admin?.backToClientRequests ?? "Back to Client Requests"}
         </Link>
       </div>
     );
@@ -277,209 +257,157 @@ export default function LeadDetailPage() {
               style={{ color: "var(--admin-text-muted)" }}
             >
               <ArrowLeft className="h-4 w-4 shrink-0" />
-              <span>Back to Client Requests</span>
+              <span>{t.admin?.backToClientRequests ?? "Back to Client Requests"}</span>
             </Link>
-            {!isUnclaimed && !isEditing && (
-              <button
-                type="button"
-                onClick={startEditing}
-                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
-                style={{
-                  borderColor: "var(--admin-border)",
-                  color: "var(--admin-text)",
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-                Edit
-              </button>
-            )}
           </div>
 
-          {isEditing ? (
-            <form
-              className="mt-6 space-y-4"
-              onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
-            >
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Name *</label>
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-                    required
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Email *</label>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
-                    required
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Phone</label>
-                  <input
-                    type="tel"
-                    value={editForm.phone}
-                    onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Business owner</label>
-                  <input
-                    type="text"
-                    value={editForm.business_owner_name}
-                    onChange={(e) => setEditForm((p) => ({ ...p, business_owner_name: e.target.value }))}
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>City</label>
-                  <input
-                    type="text"
-                    value={editForm.city}
-                    onChange={(e) => setEditForm((p) => ({ ...p, city: e.target.value }))}
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Industry</label>
-                  <input
-                    type="text"
-                    value={editForm.industry}
-                    onChange={(e) => setEditForm((p) => ({ ...p, industry: e.target.value }))}
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Service</label>
-                  <select
-                    value={editForm.service}
-                    onChange={(e) => setEditForm((p) => ({ ...p, service: e.target.value }))}
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  >
-                    {SERVICE_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Package / price</label>
-                  <input
-                    type="text"
-                    value={editForm.package_price_display}
-                    onChange={(e) => setEditForm((p) => ({ ...p, package_price_display: e.target.value }))}
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                    placeholder="e.g. 397 € / mėn."
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Notes</label>
-                  <textarea
-                    value={editForm.notes}
-                    onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
-                    rows={4}
-                    className="admin-input w-full rounded-lg px-3 py-2 text-sm resize-y"
-                    placeholder="Internal notes about this lead…"
-                  />
-                </div>
-              </div>
-              {error && <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-50"
-                  style={{ background: "var(--admin-accent)", color: "var(--admin-bg)" }}
-                >
-                  {saving ? "Saving…" : "Save"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setIsEditing(false); setError(null); }}
-                  disabled={saving}
-                  className="rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50"
-                  style={{ borderColor: "var(--admin-border)", color: "var(--admin-text-muted)" }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            <>
-              <h1 className="text-xl font-semibold" style={{ color: "var(--admin-text)" }}>
-                {lead?.name}
-              </h1>
-              <p className="mt-1 text-sm" style={{ color: "var(--admin-text-muted)" }}>
-                {lead?.email}
-              </p>
+          <>
+            <h1 className="text-xl font-semibold" style={{ color: "var(--admin-text)" }}>
+              <InlineEditableField
+                as="span"
+                value={lead?.name ?? null}
+                onSave={(v) => saveField("name", v)}
+                disabled={!!isUnclaimed}
+                saving={savingField === "name"}
+              />
+            </h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--admin-text-muted)" }}>
+              <InlineEditableField
+                as="span"
+                value={lead?.email ?? null}
+                onSave={(v) => saveField("email", v)}
+                type="email"
+                disabled={!!isUnclaimed}
+                saving={savingField === "email"}
+              />
+            </p>
 
-              <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
-            {lead?.phone && (
-              <div className="flex flex-col gap-0.5">
-                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Phone</dt>
-                <dd style={{ color: "var(--admin-text)" }}>{lead.phone}</dd>
-              </div>
-            )}
-            {lead?.business_owner_name && (
-              <div className="flex flex-col gap-0.5">
-                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Business owner</dt>
-                <dd style={{ color: "var(--admin-text)" }}>{lead.business_owner_name}</dd>
-              </div>
-            )}
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>City</dt>
-              <dd style={{ color: "var(--admin-text)" }}>{lead?.city}</dd>
+            <div className="mt-3 flex flex-col gap-1">
+              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
+                {t.admin?.website ?? "Website"}
+              </span>
+              <InlineEditableField
+                value={lead?.website ?? null}
+                onSave={(v) => saveField("website", v)}
+                type="text"
+                placeholder={t.admin?.websitePlaceholder ?? "https://"}
+                disabled={!!isUnclaimed}
+                saving={savingField === "website"}
+              />
+              {lead?.website?.trim() && (
+                <a
+                  href={normalizeExternalUrl(lead.website)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium w-fit"
+                  style={{ color: "var(--admin-accent)" }}
+                >
+                  {t.admin?.openWebsite ?? "Open website"} →
+                </a>
+              )}
             </div>
-            {lead?.outreach_email && (
-              <div className="flex flex-col gap-0.5">
-                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Sent from email</dt>
-                <dd style={{ color: "var(--admin-text)" }}>{lead.outreach_email}</dd>
-              </div>
+
+            {error && (
+              <p className="mt-4 text-sm" style={{ color: "var(--admin-accent)" }}>
+                {error}
+              </p>
             )}
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Industry</dt>
-              <dd style={{ color: "var(--admin-text)" }}>{lead?.industry}</dd>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Service</dt>
-              <dd style={{ color: "var(--admin-text)" }}>{lead?.service}</dd>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Package</dt>
-              <dd style={{ color: "var(--admin-text)" }}>{lead?.package_price_display || lead?.package_slug || "—"}</dd>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Submitted</dt>
-              <dd style={{ color: "var(--admin-text)" }}>{lead?.created_at ? formatDate(lead.created_at) : "—"}</dd>
-            </div>
-            {lead?.claimed_at && (
+
+            <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
               <div className="flex flex-col gap-0.5">
-                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Claimed</dt>
-                <dd style={{ color: "var(--admin-text)" }}>{formatDate(lead.claimed_at)}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.phone ?? "Phone"}</dt>
+                <InlineEditableField
+                  value={lead?.phone ?? null}
+                  onSave={(v) => saveField("phone", v)}
+                  type="tel"
+                  disabled={!!isUnclaimed}
+                  saving={savingField === "phone"}
+                />
               </div>
-            )}
-            {lead?.status && lead.status !== "new" && (
               <div className="flex flex-col gap-0.5">
-                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Status</dt>
-                <dd style={{ color: "var(--admin-text)" }}>{formatStatus(lead.status)}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.businessOwner ?? "Business owner"}</dt>
+                <InlineEditableField
+                  value={lead?.business_owner_name ?? null}
+                  onSave={(v) => saveField("business_owner_name", v)}
+                  disabled={!!isUnclaimed}
+                  saving={savingField === "business_owner_name"}
+                />
               </div>
-            )}
-            {lead?.notes && (
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.city ?? "City"}</dt>
+                <InlineEditableField
+                  value={lead?.city ?? null}
+                  onSave={(v) => saveField("city", v)}
+                  disabled={!!isUnclaimed}
+                  saving={savingField === "city"}
+                />
+              </div>
+              {lead?.outreach_email && (
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.sentFromEmail ?? "Sent from email"}</dt>
+                  <dd style={{ color: "var(--admin-text)" }}>{lead.outreach_email}</dd>
+                </div>
+              )}
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.industry ?? "Industry"}</dt>
+                <InlineEditableField
+                  value={lead?.industry ?? null}
+                  onSave={(v) => saveField("industry", v)}
+                  disabled={!!isUnclaimed}
+                  saving={savingField === "industry"}
+                />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.service ?? "Service"}</dt>
+                <InlineEditableField
+                  value={lead?.service ?? null}
+                  onSave={(v) => saveField("service", v)}
+                  type="select"
+                  options={serviceSelectOptions}
+                  disabled={!!isUnclaimed}
+                  saving={savingField === "service"}
+                />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.package ?? "Package"}</dt>
+                <InlineEditableField
+                  value={lead?.package_price_display || lead?.package_slug || null}
+                  onSave={(v) => saveField("package_price_display", v)}
+                  placeholder={t.admin?.packagePlaceholder ?? "e.g. 397 € / mėn."}
+                  disabled={!!isUnclaimed}
+                  saving={savingField === "package_price_display"}
+                />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.submitted ?? "Submitted"}</dt>
+                <dd style={{ color: "var(--admin-text)" }}>{lead?.created_at ? formatDate(lead.created_at) : "—"}</dd>
+              </div>
+              {lead?.claimed_at && (
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.claimed ?? "Claimed"}</dt>
+                  <dd style={{ color: "var(--admin-text)" }}>{formatDate(lead.claimed_at)}</dd>
+                </div>
+              )}
+              {lead?.status && lead.status !== "new" && (
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.status ?? "Status"}</dt>
+                  <dd style={{ color: "var(--admin-text)" }}>{formatStatus(lead.status, t)}</dd>
+                </div>
+              )}
               <div className="flex flex-col gap-0.5 sm:col-span-2">
-                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Notes</dt>
-                <dd className="whitespace-pre-wrap text-sm" style={{ color: "var(--admin-text)" }}>{lead.notes}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.notes ?? "Notes"}</dt>
+                <InlineEditableField
+                  value={lead?.notes ?? null}
+                  onSave={(v) => saveField("notes", v)}
+                  type="textarea"
+                  rows={3}
+                  placeholder={t.admin?.notesPlaceholder ?? "Internal notes about this lead…"}
+                  disabled={!!isUnclaimed}
+                  saving={savingField === "notes"}
+                />
               </div>
-            )}
-          </dl>
-            </>
-          )}
+            </dl>
+          </>
         </div>
 
         {isUnclaimed ? (
@@ -488,7 +416,7 @@ export default function LeadDetailPage() {
             style={{ borderColor: "var(--admin-border)" }}
           >
             <p className="text-sm font-medium" style={{ color: "var(--admin-text)" }}>
-              Claim this lead to assign it to yourself and set status to Contacted.
+              {t.admin?.claimPrompt ?? "Claim this lead to assign it to yourself and set status to Contacted."}
             </p>
             {error && (
               <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>
@@ -503,7 +431,7 @@ export default function LeadDetailPage() {
                 color: "var(--admin-bg)",
               }}
             >
-              {submitting ? "Claiming…" : "Claim lead & create follow-ups"}
+              {submitting ? (t.admin?.claiming ?? "Claiming…") : (t.admin?.claimLead ?? "Claim lead & create follow-ups")}
             </button>
           </div>
         ) : (
@@ -526,23 +454,19 @@ export default function LeadDetailPage() {
               </div>
             )}
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>Status</label>
+              <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.status ?? "Status"}</label>
               <select
                 value={lead?.status ?? "contacted"}
                 onChange={(e) => handleStatusChange(e.target.value)}
                 disabled={updatingStatus}
                 className="admin-input rounded-lg px-3 py-2 text-sm max-w-xs"
               >
-                <option value="contacted">Contacted</option>
-                <option value="replies">Replies</option>
-                <option value="meeting_agreed">Meeting agreed</option>
-                <option value="agreed_to_pay">Agreed to pay</option>
-                <option value="sent_agreement">Sent agreement</option>
-                <option value="current_client">Current client</option>
-                <option value="lost">Lost</option>
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
               </select>
               {updatingStatus && (
-                <span className="ml-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>Updating…</span>
+                <span className="ml-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.updating ?? "Updating…"}</span>
               )}
             </div>
           </div>

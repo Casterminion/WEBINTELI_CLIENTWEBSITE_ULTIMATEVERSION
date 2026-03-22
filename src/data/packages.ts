@@ -35,7 +35,7 @@ export const PACKAGES: PackageData[] = [
     name: 'Standard',
     price: '€397 / Month',
     commitment: '3 month commitment. Cancellable monthly thereafter.',
-    guarantee: 'Top 3 on Google within 90 days. Guaranteed or you don\'t pay.',
+    guarantee: 'TOP 3 Google Maps within 90 days – or we work for free.',
     visibility: 'Visible on 75%+ of search results.',
     features: [
       "Full Competitor's Analysis",
@@ -53,7 +53,7 @@ export const PACKAGES: PackageData[] = [
     price: '€997 / Quarter',
     priceSub: '(3 Months)',
     commitment: 'Cancellable every 3 months.',
-    guarantee: 'Top 3 on Google within 90 days. Guaranteed or you don\'t pay.',
+    guarantee: 'TOP 3 Google Maps within 90 days – or we work for free.',
     visibility: 'Visible on 75%+ of search results.',
     features: [
       "Full Competitor's Analysis",

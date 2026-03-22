@@ -4,7 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Inbox, Loader2, Search, Plus, X, Filter, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { normalizeExternalUrl } from "@/lib/url";
+import {
+  ADMIN_SERVICE_OPTIONS,
+  DEFAULT_ADMIN_SERVICE,
+  type AdminServiceOption,
+} from "@/data/adminServiceOptions";
 
 type Lead = {
   id: string;
@@ -20,27 +27,21 @@ type Lead = {
   claimed_at: string | null;
   created_at: string;
   outreach_email: string | null;
+  notes: string | null;
+  website: string | null;
 };
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "All statuses" },
-  { value: "new", label: "New" },
-  { value: "contacted", label: "Contacted" },
-  { value: "replies", label: "Replies" },
-  { value: "meeting_agreed", label: "Meeting agreed" },
-  { value: "agreed_to_pay", label: "Agreed to pay" },
-  { value: "sent_agreement", label: "Sent agreement" },
-  { value: "current_client", label: "Current client" },
-  { value: "lost", label: "Lost" },
-];
-
-const SERVICE_OPTIONS = ["SEO", "PPC", "Content", "Other"];
-
-const OUTREACH_EMAIL_OPTIONS = [
-  "arijus@webinteli.lt",
-  "joris@webinteli.lt",
+const STATUS_VALUES = [
+  { value: "all", key: "allStatuses" as const },
+  { value: "new", key: "statusNew" as const },
+  { value: "contacted", key: "statusContacted" as const },
+  { value: "replies", key: "statusReplies" as const },
+  { value: "meeting_agreed", key: "statusMeetingAgreed" as const },
+  { value: "agreed_to_pay", key: "statusAgreedToPay" as const },
+  { value: "sent_agreement", key: "statusSentAgreement" as const },
+  { value: "current_client", key: "statusCurrentClient" as const },
+  { value: "lost", key: "statusLost" as const },
 ] as const;
-const DEFAULT_OUTREACH_EMAIL = OUTREACH_EMAIL_OPTIONS[0];
 
 function getFollowUpDueDates(): string[] {
   const dates: string[] = [];
@@ -64,7 +65,13 @@ function todayISODate(): string {
 }
 
 export default function MyLeadsPage() {
+  const { t } = useLanguage();
   const router = useRouter();
+
+  const STATUS_OPTIONS = useMemo(
+    () => STATUS_VALUES.map((o) => ({ value: o.value, label: t.admin?.[o.key] ?? o.value })),
+    [t]
+  );
   const [leads, setLeads] = useState<Lead[]>([]);
   const [todayLeadIds, setTodayLeadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -81,8 +88,9 @@ export default function MyLeadsPage() {
     email: "",
     phone: "",
     business_owner_name: "",
-    service: "SEO",
-    outreach_email: DEFAULT_OUTREACH_EMAIL,
+    service: DEFAULT_ADMIN_SERVICE,
+    notes: "",
+    website: "",
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -97,7 +105,7 @@ export default function MyLeadsPage() {
       const [leadsRes, tasksRes] = await Promise.all([
         supabase
           .from("intake_submissions")
-          .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at, outreach_email")
+          .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at, outreach_email, notes, website")
           .eq("assigned_to", user.id)
           .neq("status", "lost")
           .order("claimed_at", { ascending: false }),
@@ -134,7 +142,10 @@ export default function MyLeadsPage() {
     const term = search.trim().toLowerCase();
     if (term) {
       list = list.filter((l) => {
-        const haystack = [l.name, l.email, l.phone, l.business_owner_name].filter(Boolean).join(" ").toLowerCase();
+        const haystack = [l.name, l.email, l.phone, l.business_owner_name, l.notes, l.website]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
         return haystack.includes(term);
       });
     }
@@ -161,8 +172,10 @@ export default function MyLeadsPage() {
         industry: "—",
         package_slug: "manual",
         package_price_display: "",
-        service: service || "SEO",
-        outreach_email: addLeadForm.outreach_email || null,
+        service: service || DEFAULT_ADMIN_SERVICE,
+        outreach_email: null,
+        notes: addLeadForm.notes.trim() || null,
+        website: addLeadForm.website.trim() || null,
         assigned_to: user.id,
         status: "new",
         claimed_at: new Date().toISOString(),
@@ -188,13 +201,21 @@ export default function MyLeadsPage() {
       setAddLeadSubmitting(false);
       return;
     }
-    setAddLeadForm({ name: "", email: "", phone: "", business_owner_name: "", service: "SEO", outreach_email: DEFAULT_OUTREACH_EMAIL });
+    setAddLeadForm({
+      name: "",
+      email: "",
+      phone: "",
+      business_owner_name: "",
+      service: DEFAULT_ADMIN_SERVICE,
+      notes: "",
+      website: "",
+    });
     setAddLeadOpen(false);
     setAddLeadSubmitting(false);
     setError(null);
     const { data: refreshed } = await supabase
       .from("intake_submissions")
-      .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at, outreach_email")
+      .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at, outreach_email, notes, website")
       .eq("assigned_to", user.id)
       .neq("status", "lost")
       .order("claimed_at", { ascending: false });
@@ -265,25 +286,26 @@ export default function MyLeadsPage() {
         open={!!deleteConfirmId}
         onClose={closeDeleteConfirm}
         onConfirm={performDelete}
-        title="Delete lead?"
-        message="This lead and its follow-up tasks will be removed. This cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={t.admin?.deleteLead ?? "Delete lead?"}
+        message={t.admin?.deleteLeadConfirm ?? "This lead and its follow-up tasks will be removed. This cannot be undone."}
+        confirmLabel={t.admin?.delete ?? "Delete"}
+        cancelLabel={t.admin?.cancel ?? "Cancel"}
+        loadingLabel={t.admin?.deleting ?? "Deleting…"}
         variant="danger"
         loading={deletingId === deleteConfirmId}
       />
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
-            My leads
+            {t.admin?.myLeads ?? "My leads"}
           </h1>
           <p className="mt-0.5 max-w-xl text-xs" style={{ color: "var(--admin-text-muted)" }}>
-            Leads assigned to you. Click a row to open the lead.
+            {t.admin?.leadsAssigned ?? "Leads assigned to you. Click a row to open the lead."}
           </p>
         </div>
         <div className="admin-metric flex items-center gap-4 rounded-md px-4 py-2.5 tabular-nums">
           <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
-            Total
+            {t.admin?.total ?? "Total"}
           </span>
           <span className="text-xl font-semibold">
             {filtered.length}
@@ -310,10 +332,10 @@ export default function MyLeadsPage() {
             }}
           >
             <Filter className="h-3.5 w-3.5 shrink-0" />
-            Filters
+            {t.admin?.filters ?? "Filters"}
             {(search || statusFilter !== "all" || serviceFilter !== "all" || followUpToday) && (
               <span className="rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "var(--admin-accent-dim)", color: "var(--admin-accent)" }}>
-                Active
+                {t.admin?.active ?? "Active"}
               </span>
             )}
             {filtersOpen ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
@@ -328,27 +350,27 @@ export default function MyLeadsPage() {
             }}
           >
             <Plus className="h-3.5 w-3.5" />
-            Add lead
+            {t.admin?.addLead ?? "Add lead"}
           </button>
         </div>
         {filtersOpen && (
           <div className="border-t px-4 py-4 space-y-4" style={{ borderColor: "var(--admin-border)" }}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>Search</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.search ?? "Search"}</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--admin-text-muted)" }} />
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Name, email, phone…"
+                    placeholder={t.admin?.searchPlaceholderLeads ?? "Name, email, phone…"}
                     className="admin-input w-full rounded-lg py-2 pl-9 pr-3 text-sm"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>Status</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.status ?? "Status"}</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -360,17 +382,17 @@ export default function MyLeadsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>Service</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.service ?? "Service"}</label>
                 <select
                   value={serviceFilter}
                   onChange={(e) => setServiceFilter(e.target.value)}
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="all">All services</option>
+                  <option value="all">{t.admin?.allServices ?? "All services"}</option>
                   {servicesFromData.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
-                  {SERVICE_OPTIONS.filter((s) => !servicesFromData.includes(s)).map((s) => (
+                  {ADMIN_SERVICE_OPTIONS.filter((s) => !servicesFromData.includes(s)).map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
@@ -384,7 +406,7 @@ export default function MyLeadsPage() {
                     className="rounded border"
                     style={{ borderColor: "var(--admin-border)" }}
                   />
-                  Follow up today
+                  {t.admin?.followUpToday ?? "Follow up today"}
                 </label>
               </div>
             </div>
@@ -407,7 +429,7 @@ export default function MyLeadsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold" style={{ color: "var(--admin-text)" }}>Add lead</h2>
+              <h2 className="text-lg font-semibold" style={{ color: "var(--admin-text)" }}>{t.admin?.addLeadTitle ?? "Add lead"}</h2>
               <button
                 type="button"
                 onClick={() => !addLeadSubmitting && setAddLeadOpen(false)}
@@ -422,18 +444,18 @@ export default function MyLeadsPage() {
               onSubmit={(e) => { e.preventDefault(); handleAddLead(); }}
             >
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Name *</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.name ?? "Name"} *</label>
                 <input
                   type="text"
                   value={addLeadForm.name}
                   onChange={(e) => setAddLeadForm((p) => ({ ...p, name: e.target.value }))}
                   required
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  placeholder="Lead name"
+                  placeholder={t.admin?.leadNamePlaceholder ?? "Lead name"}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Email *</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.email ?? "Email"} *</label>
                 <input
                   type="email"
                   value={addLeadForm.email}
@@ -444,7 +466,19 @@ export default function MyLeadsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Phone</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.website ?? "Website"}</label>
+                <input
+                  type="text"
+                  inputMode="url"
+                  autoComplete="url"
+                  value={addLeadForm.website}
+                  onChange={(e) => setAddLeadForm((p) => ({ ...p, website: e.target.value }))}
+                  className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  placeholder={t.admin?.websitePlaceholder ?? "https://"}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.phone ?? "Phone"}</label>
                 <input
                   type="tel"
                   value={addLeadForm.phone}
@@ -454,41 +488,43 @@ export default function MyLeadsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Business owner name</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.businessOwnerName ?? "Business owner name"}</label>
                 <input
                   type="text"
                   value={addLeadForm.business_owner_name}
                   onChange={(e) => setAddLeadForm((p) => ({ ...p, business_owner_name: e.target.value }))}
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                  placeholder="Owner name"
+                  placeholder={t.admin?.ownerPlaceholder ?? "Owner name"}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Service *</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.service ?? "Service"} *</label>
                 <select
                   value={addLeadForm.service}
-                  onChange={(e) => setAddLeadForm((p) => ({ ...p, service: e.target.value }))}
+                  onChange={(e) =>
+                    setAddLeadForm((p) => ({
+                      ...p,
+                      service: e.target.value as AdminServiceOption,
+                    }))
+                  }
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
                 >
-                  {SERVICE_OPTIONS.map((s) => (
+                  {ADMIN_SERVICE_OPTIONS.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Sent from email</label>
-                <select
-                  value={addLeadForm.outreach_email}
-                  onChange={(e) => setAddLeadForm((p) => ({ ...p, outreach_email: e.target.value }))}
-                  className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                >
-                  {OUTREACH_EMAIL_OPTIONS.map((addr) => (
-                    <option key={addr} value={addr}>{addr}</option>
-                  ))}
-                </select>
-                <p className="mt-0.5 text-[10px]" style={{ color: "var(--admin-text-muted)" }}>
-                  Which email you used for this cold outreach (for your reference).
-                </p>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                  {t.admin?.addLeadPitchLabel ?? "Notes & pitch"}
+                </label>
+                <textarea
+                  value={addLeadForm.notes}
+                  onChange={(e) => setAddLeadForm((p) => ({ ...p, notes: e.target.value }))}
+                  rows={4}
+                  className="admin-input w-full rounded-lg px-3 py-2 text-sm resize-y min-h-[88px]"
+                  placeholder={t.admin?.addLeadPitchPlaceholder ?? ""}
+                />
               </div>
               {error && <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>}
               <div className="flex gap-3 pt-2">
@@ -498,7 +534,7 @@ export default function MyLeadsPage() {
                   className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
                   style={{ background: "var(--admin-accent)", color: "var(--admin-bg)" }}
                 >
-                  {addLeadSubmitting ? "Adding…" : "Add lead & create follow-ups"}
+                  {addLeadSubmitting ? (t.admin?.adding ?? "Adding…") : (t.admin?.addLeadSubmit ?? "Add lead & create follow-ups")}
                 </button>
                 <button
                   type="button"
@@ -506,7 +542,7 @@ export default function MyLeadsPage() {
                   className="rounded-lg border px-4 py-2 text-sm font-medium"
                   style={{ borderColor: "var(--admin-border)", color: "var(--admin-text-muted)" }}
                 >
-                  Cancel
+                  {t.admin?.cancel ?? "Cancel"}
                 </button>
               </div>
             </form>
@@ -524,7 +560,7 @@ export default function MyLeadsPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-4 px-5 py-16 self-center">
             <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--admin-accent)" }} />
-            <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>Loading…</p>
+            <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.loadingTasks ?? "Loading…"}</p>
           </div>
         ) : error && !addLeadOpen ? (
           <div className="px-5 py-16 text-sm" style={{ color: "var(--admin-accent)" }}>{error}</div>
@@ -532,7 +568,7 @@ export default function MyLeadsPage() {
           <div className="flex flex-col items-center justify-center gap-3 px-5 py-16">
             <Inbox className="h-12 w-12" style={{ color: "var(--admin-text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>
-              {leads.length === 0 ? "No leads assigned to you." : "No leads match your filters."}
+              {leads.length === 0 ? (t.admin?.noLeads ?? "No leads assigned to you.") : (t.admin?.noLeadsFiltered ?? "No leads match your filters.")}
             </p>
           </div>
         ) : (
@@ -568,11 +604,11 @@ export default function MyLeadsPage() {
                     style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
                   >
                     {([
-                      ["City", lead.city],
-                      ["Service", lead.service],
-                      ["Phone", lead.phone || "—"],
-                      ["Owner", lead.business_owner_name || "—"],
-                      ...(lead.outreach_email ? [["From", lead.outreach_email]] as [string, string][] : []),
+                      [t.admin?.city ?? "City", lead.city],
+                      [t.admin?.service ?? "Service", lead.service],
+                      [t.admin?.phone ?? "Phone", lead.phone || "—"],
+                      [t.admin?.owner ?? "Owner", lead.business_owner_name || "—"],
+                      ...(lead.outreach_email ? [[t.admin?.from ?? "From", lead.outreach_email]] as [string, string][] : []),
                     ] as [string, string][]).map(([label, val]) => (
                       <div key={label}>
                         <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>
@@ -581,6 +617,23 @@ export default function MyLeadsPage() {
                         <p className="text-xs" style={{ color: "var(--admin-text)" }}>{val}</p>
                       </div>
                     ))}
+                    {lead.website?.trim() && (
+                      <div className="col-span-2">
+                        <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>
+                          {t.admin?.website ?? "Website"}
+                        </p>
+                        <a
+                          href={normalizeExternalUrl(lead.website)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs break-all underline-offset-2 hover:underline"
+                          style={{ color: "var(--admin-accent)" }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {lead.website}
+                        </a>
+                      </div>
+                    )}
                   </div>
 
                   {/* Bottom: claimed date + actions */}
@@ -609,7 +662,7 @@ export default function MyLeadsPage() {
                         className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
                         style={{ background: "var(--admin-accent)", color: "#ffffff" }}
                       >
-                        Open Lead
+                        {t.admin?.openLead ?? "Open Lead"}
                       </button>
                     </div>
                   </div>
@@ -625,14 +678,14 @@ export default function MyLeadsPage() {
                     className="text-left text-[10px] font-semibold uppercase tracking-widest"
                     style={{ color: "var(--admin-text-muted)", background: "var(--admin-bg)" }}
                   >
-                    <th className="px-4 py-2.5">Name</th>
-                    <th className="px-4 py-2.5">Email</th>
-                    <th className="px-4 py-2.5 hidden sm:table-cell">Phone</th>
-                    <th className="px-4 py-2.5 hidden md:table-cell">Business owner</th>
-                    <th className="px-4 py-2.5">City</th>
-                    <th className="px-4 py-2.5">Service</th>
-                    <th className="px-4 py-2.5">Status</th>
-                    <th className="px-4 py-2.5">Claimed</th>
+                    <th className="px-4 py-2.5">{t.admin?.name ?? "Name"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.email ?? "Email"}</th>
+                    <th className="px-4 py-2.5 hidden sm:table-cell">{t.admin?.phone ?? "Phone"}</th>
+                    <th className="px-4 py-2.5 hidden md:table-cell">{t.admin?.businessOwner ?? "Business owner"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.city ?? "City"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.service ?? "Service"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.status ?? "Status"}</th>
+                    <th className="px-4 py-2.5">{t.admin?.claimed ?? "Claimed"}</th>
                     <th className="w-12 px-4 py-2.5 text-right" aria-label="Actions" />
                   </tr>
                 </thead>
@@ -669,8 +722,8 @@ export default function MyLeadsPage() {
                           disabled={deletingId === lead.id}
                           className="inline-flex items-center justify-center rounded p-1.5 transition-colors disabled:opacity-50 hover:bg-red-500/10 hover:text-red-500"
                           style={{ color: "var(--admin-text-muted)" }}
-                          title="Delete"
-                          aria-label="Delete lead"
+                          title={t.admin?.delete ?? "Delete"}
+                          aria-label={t.admin?.deleteLead ?? "Delete lead"}
                         >
                           {deletingId === lead.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

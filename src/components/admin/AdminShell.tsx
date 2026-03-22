@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { Inbox, LogOut, UserCheck, ListTodo, Menu, X } from "lucide-react";
+import { Inbox, Landmark, LayoutDashboard, LogOut, UserCheck, ListTodo, Menu, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import AdminInstallPrompt from "./AdminInstallPrompt";
 import PushOptInBanner from "./PushOptInBanner";
 
@@ -14,23 +15,13 @@ type Props = {
   children: ReactNode;
 };
 
-const navItems = [
-  {
-    href: "/admin/client-requests",
-    label: "Client Requests",
-    icon: Inbox,
-  },
-  {
-    href: "/admin/my-leads",
-    label: "My leads",
-    icon: UserCheck,
-  },
-  {
-    href: "/admin/tasks",
-    label: "Tasks",
-    icon: ListTodo,
-  },
-];
+const navHrefs = [
+  { href: "/admin/dashboard", key: "dashboard" as const, icon: LayoutDashboard },
+  { href: "/admin/financai", key: "financai" as const, icon: Landmark },
+  { href: "/admin/client-requests", key: "clientRequests" as const, icon: Inbox },
+  { href: "/admin/my-leads", key: "myLeads" as const, icon: UserCheck },
+  { href: "/admin/tasks", key: "tasks" as const, icon: ListTodo },
+] as const;
 
 function getDisplayName(user: User | null): string {
   if (!user) return "Admin";
@@ -39,10 +30,17 @@ function getDisplayName(user: User | null): string {
 }
 
 export default function AdminShell({ children }: Props) {
+  const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navItems = navHrefs.map(({ href, key, icon }) => ({
+    href,
+    label: t.admin?.[key] ?? key,
+    icon,
+  }));
 
   useEffect(() => {
     const loadUser = async () => {
@@ -83,7 +81,7 @@ export default function AdminShell({ children }: Props) {
         }}
       >
         <Link
-          href="/admin/client-requests"
+          href="/admin/dashboard"
           className="min-w-0"
           onClick={() => setMobileMenuOpen(false)}
         >
@@ -94,7 +92,7 @@ export default function AdminShell({ children }: Props) {
             Webinteli
           </span>
           <p className="text-sm font-semibold tracking-tight truncate" style={{ color: "var(--admin-text)" }}>
-            Admin Console
+            {t.admin?.adminConsole ?? "Admin Console"}
           </p>
         </Link>
         <button
@@ -106,7 +104,7 @@ export default function AdminShell({ children }: Props) {
             color: "var(--admin-text)",
             background: "var(--admin-bg-elevated)",
           }}
-          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-label={mobileMenuOpen ? (t.admin?.closeMenu ?? "Close menu") : (t.admin?.openMenu ?? "Open menu")}
           aria-expanded={mobileMenuOpen}
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -139,14 +137,14 @@ export default function AdminShell({ children }: Props) {
               style={{ borderColor: "var(--admin-border)" }}
             >
               <span className="text-xs font-medium" style={{ color: "var(--admin-text-muted)" }}>
-                Welcome, <span style={{ color: "var(--admin-text)" }}>{getDisplayName(user)}</span>
+                {t.admin?.welcome ?? "Welcome"}, <span style={{ color: "var(--admin-text)" }}>{getDisplayName(user)}</span>
               </span>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex h-9 w-9 items-center justify-center rounded-lg"
                 style={{ color: "var(--admin-text-muted)" }}
-                aria-label="Close menu"
+                aria-label={t.admin?.closeMenu ?? "Close menu"}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -189,7 +187,7 @@ export default function AdminShell({ children }: Props) {
                 }}
               >
                 <LogOut className="h-4 w-4" />
-                Log out
+                {t.admin?.logOut ?? "Log out"}
               </button>
             </div>
           </div>
@@ -208,7 +206,7 @@ export default function AdminShell({ children }: Props) {
           className="px-4 py-5 border-b"
           style={{ borderColor: "var(--admin-border)" }}
         >
-          <Link href="/admin/client-requests" className="block">
+          <Link href="/admin/dashboard" className="block">
             <span
               className="text-[11px] font-medium uppercase tracking-[0.2em]"
               style={{ color: "var(--admin-text-muted)" }}
@@ -216,11 +214,11 @@ export default function AdminShell({ children }: Props) {
               Webinteli
             </span>
             <p className="mt-1.5 text-base font-semibold tracking-tight" style={{ color: "var(--admin-text)" }}>
-              Admin Console
+              {t.admin?.adminConsole ?? "Admin Console"}
             </p>
           </Link>
           <p className="mt-3 text-xs" style={{ color: "var(--admin-text-muted)" }}>
-            Welcome, <span className="font-medium" style={{ color: "var(--admin-text)" }}>{getDisplayName(user)}</span>
+            {t.admin?.welcome ?? "Welcome"}, <span className="font-medium" style={{ color: "var(--admin-text)" }}>{getDisplayName(user)}</span>
           </p>
         </div>
 
@@ -261,13 +259,18 @@ export default function AdminShell({ children }: Props) {
             }}
           >
             <LogOut className="h-3.5 w-3.5" />
-            Log out
+            {t.admin?.logOut ?? "Log out"}
           </button>
         </div>
       </aside>
 
       <main className="flex-1 min-w-0">
-        <div className="max-w-6xl mx-auto px-4 py-4 md:px-6 md:py-6">
+        <div
+          className={[
+            "max-w-6xl mx-auto px-4 md:px-6",
+            pathname === "/admin/dashboard" ? "py-3 md:py-4" : "py-4 md:py-6",
+          ].join(" ")}
+        >
           <AdminInstallPrompt />
           <PushOptInBanner />
           {children}
