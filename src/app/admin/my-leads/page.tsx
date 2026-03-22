@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { normalizeExternalUrl } from "@/lib/url";
+import { getFollowUpDueDates, todayISODateUtc } from "@/lib/followUpSchedule";
 import {
   ADMIN_SERVICE_OPTIONS,
   DEFAULT_ADMIN_SERVICE,
@@ -43,27 +44,6 @@ const STATUS_VALUES = [
   { value: "lost", key: "statusLost" as const },
 ] as const;
 
-function getFollowUpDueDates(): string[] {
-  const dates: string[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  for (let i = 1; i <= 7; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + i);
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  for (const offset of [10, 13, 16, 19, 22, 25, 28]) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + offset);
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
-}
-
-function todayISODate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export default function MyLeadsPage() {
   const { t } = useLanguage();
   const router = useRouter();
@@ -95,6 +75,15 @@ export default function MyLeadsPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  /** Open add-lead modal when arriving from lead detail (?add=1), then strip query from URL */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("add") !== "1") return;
+    setAddLeadOpen(true);
+    router.replace("/admin/my-leads", { scroll: false });
+  }, [router]);
+
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -113,7 +102,7 @@ export default function MyLeadsPage() {
           .from("tasks")
           .select("lead_id")
           .eq("assigned_to", user.id)
-          .eq("due_date", todayISODate())
+          .eq("due_date", todayISODateUtc())
           .is("completed_at", null),
       ]);
       if (leadsRes.error) {
@@ -575,14 +564,38 @@ export default function MyLeadsPage() {
           <>
             {/* ── MOBILE CARDS (below md) ── */}
             <div className="md:hidden divide-y" style={{ borderColor: "var(--admin-border)" }}>
-              {filtered.map((lead) => (
-                <div key={lead.id} className="px-4 py-4" style={{ borderBottomColor: "var(--admin-border)" }}>
+              {filtered.map((lead) => {
+                const dueToday = todayLeadIds.has(lead.id);
+                return (
+                <div
+                  key={lead.id}
+                  className="px-4 py-4"
+                  style={{
+                    borderBottom: "1px solid var(--admin-border)",
+                    ...(dueToday
+                      ? {
+                          background: "linear-gradient(90deg, rgba(59, 130, 246, 0.14) 0%, rgba(59, 130, 246, 0.04) 55%, transparent 100%)",
+                          boxShadow: "inset 4px 0 0 var(--admin-accent)",
+                        }
+                      : {}),
+                  }}
+                >
                   {/* Top: name + email */}
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "var(--admin-text)" }}>
-                        {lead.name}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--admin-text)" }}>
+                          {lead.name}
+                        </p>
+                        {dueToday && (
+                          <span
+                            className="shrink-0 text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5"
+                            style={{ background: "var(--admin-accent)", color: "#fff" }}
+                          >
+                            {t.admin?.followUpDueBadge ?? "Due today"}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs mt-0.5 truncate" style={{ color: "var(--admin-text-muted)" }}>
                         {lead.email}
                       </p>
@@ -667,7 +680,8 @@ export default function MyLeadsPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             {/* ── DESKTOP TABLE (md and up) ── */}
@@ -690,13 +704,31 @@ export default function MyLeadsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((lead) => (
+                  {filtered.map((lead) => {
+                    const dueToday = todayLeadIds.has(lead.id);
+                    return (
                     <tr
                       key={lead.id}
                       role="button"
                       tabIndex={0}
-                      className="admin-table-row cursor-pointer transition-colors"
-                      style={{ borderBottom: "1px solid var(--admin-border)" }}
+                      className={[
+                        "admin-table-row cursor-pointer transition-colors",
+                        dueToday ? "my-lead-followup-today" : "",
+                      ].filter(Boolean).join(" ")}
+                      style={{
+                        borderBottom: "1px solid var(--admin-border)",
+                        ...(dueToday
+                          ? {
+                              background: "linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.03) 40%, transparent 100%)",
+                              boxShadow: "inset 4px 0 0 var(--admin-accent)",
+                            }
+                          : {}),
+                      }}
+                      aria-label={
+                        dueToday
+                          ? `${lead.name}. ${t.admin?.followUpToday ?? "Follow up today"}.`
+                          : undefined
+                      }
                       onClick={() => router.push(`/admin/leads/${lead.id}`)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -705,7 +737,21 @@ export default function MyLeadsPage() {
                         }
                       }}
                     >
-                      <td className="px-4 py-2 font-medium text-sm" style={{ color: "var(--admin-text)" }}>{lead.name}</td>
+                      <td className="px-4 py-2 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {dueToday && (
+                            <span
+                              className="shrink-0 text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5"
+                              style={{ background: "var(--admin-accent)", color: "#fff" }}
+                            >
+                              {t.admin?.followUpDueBadge ?? "Due today"}
+                            </span>
+                          )}
+                          <span className="font-medium truncate" style={{ color: "var(--admin-text)" }}>
+                            {lead.name}
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-4 py-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>{lead.email}</td>
                       <td className="px-4 py-2 hidden sm:table-cell tabular-nums text-sm" style={{ color: "var(--admin-text)" }}>{lead.phone || "—"}</td>
                       <td className="px-4 py-2 hidden md:table-cell text-sm" style={{ color: "var(--admin-text)" }}>{lead.business_owner_name || "—"}</td>
@@ -733,7 +779,8 @@ export default function MyLeadsPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>

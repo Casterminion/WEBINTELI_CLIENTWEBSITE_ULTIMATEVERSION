@@ -15,6 +15,9 @@ type Props = {
   children: ReactNode;
 };
 
+/** Branding / title link — same landing as Client requests */
+const ADMIN_HOME_HREF = "/admin/client-requests";
+
 const navHrefs = [
   { href: "/admin/dashboard", key: "dashboard" as const, icon: LayoutDashboard },
   { href: "/admin/financai", key: "financai" as const, icon: Landmark },
@@ -81,7 +84,7 @@ export default function AdminShell({ children }: Props) {
         }}
       >
         <Link
-          href="/admin/dashboard"
+          href={ADMIN_HOME_HREF}
           className="min-w-0"
           onClick={() => setMobileMenuOpen(false)}
         >
@@ -206,7 +209,7 @@ export default function AdminShell({ children }: Props) {
           className="px-4 py-5 border-b"
           style={{ borderColor: "var(--admin-border)" }}
         >
-          <Link href="/admin/dashboard" className="block">
+          <Link href={ADMIN_HOME_HREF} className="block">
             <span
               className="text-[11px] font-medium uppercase tracking-[0.2em]"
               style={{ color: "var(--admin-text-muted)" }}

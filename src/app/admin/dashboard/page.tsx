@@ -1,141 +1,79 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { AdminFinanceMonthChart } from "@/components/admin/AdminFinanceMonthChart";
-import { formatEur, localTodayISO } from "@/lib/adminFormat";
+import { localTodayISO } from "@/lib/adminFormat";
 import styles from "./DashboardPage.module.css";
 
-function startOfMonthISO(d: Date): string {
+/** Local calendar YYYY-MM-DD from an ISO timestamp */
+function toLocalDateISO(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}-01`;
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-const METRIC_KEYS = [
-  "sent_emails",
-  "calls_made",
-  "emails_opened",
-  "replies",
-  "positive_replies",
-  "looms_sent",
-  "payment_links_sent",
-  "meetings_got",
-  "clients_got",
-  "upsells",
-] as const;
-
-type MetricKey = (typeof METRIC_KEYS)[number];
-
-const METRIC_LABEL_KEYS: Record<
-  MetricKey,
-  | "milestoneSentEmails"
-  | "milestoneCalls"
-  | "milestoneEmailsOpened"
-  | "milestoneReplies"
-  | "milestonePositiveReplies"
-  | "milestoneLooms"
-  | "milestonePaymentLinks"
-  | "milestoneMeetings"
-  | "milestoneClients"
-  | "milestoneUpsells"
-> = {
-  sent_emails: "milestoneSentEmails",
-  calls_made: "milestoneCalls",
-  emails_opened: "milestoneEmailsOpened",
-  replies: "milestoneReplies",
-  positive_replies: "milestonePositiveReplies",
-  looms_sent: "milestoneLooms",
-  payment_links_sent: "milestonePaymentLinks",
-  meetings_got: "milestoneMeetings",
-  clients_got: "milestoneClients",
-  upsells: "milestoneUpsells",
-};
-
-type DailyMetricRow = {
-  id: string;
-  user_id: string;
-  date: string;
-} & Record<MetricKey, number>;
-
-type FinanceEntry = {
-  id: string;
-  user_id: string;
-  occurred_on: string;
-  entry_type: "income" | "expense";
-  amount_eur: number;
-  note: string | null;
-};
-
-function emptyMetrics(): Record<MetricKey, number> {
-  return {
-    sent_emails: 0,
-    calls_made: 0,
-    emails_opened: 0,
-    replies: 0,
-    positive_replies: 0,
-    looms_sent: 0,
-    payment_links_sent: 0,
-    meetings_got: 0,
-    clients_got: 0,
-    upsells: 0,
-  };
+function isDateInCurrentMonth(dayISO: string, now: Date): boolean {
+  const [y, m] = dayISO.split("-").map(Number);
+  return y === now.getFullYear() && m === now.getMonth() + 1;
 }
 
-function sumMetrics(rows: DailyMetricRow[]): Record<MetricKey, number> {
-  const acc = emptyMetrics();
+function aggregateOutreachMetrics(rows: { created_at: string }[], today: string, now: Date) {
+  const byDay = new Map<string, number>();
   for (const row of rows) {
-    for (const k of METRIC_KEYS) {
-      acc[k] += Number(row[k] ?? 0);
-    }
+    const day = toLocalDateISO(row.created_at);
+    if (!day) continue;
+    byDay.set(day, (byDay.get(day) ?? 0) + 1);
   }
-  return acc;
-}
 
-function sumIncome(rows: FinanceEntry[]): number {
-  return rows.filter((e) => e.entry_type === "income").reduce((s, e) => s + Number(e.amount_eur), 0);
-}
+  let bestDay = 0;
+  for (const c of byDay.values()) {
+    if (c > bestDay) bestDay = c;
+  }
 
-function sumExpense(rows: FinanceEntry[]): number {
-  return rows.filter((e) => e.entry_type === "expense").reduce((s, e) => s + Number(e.amount_eur), 0);
+  let monthTotal = 0;
+  for (const [day, c] of byDay) {
+    if (isDateInCurrentMonth(day, now)) monthTotal += c;
+  }
+
+  return {
+    today: byDay.get(today) ?? 0,
+    bestDay,
+    monthTotal,
+    allTime: rows.length,
+  };
 }
 
 export default function AdminDashboardPage() {
   const { t } = useLanguage();
   const a = t.admin;
 
-  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [metricRows, setMetricRows] = useState<DailyMetricRow[]>([]);
-  const [financeEntries, setFinanceEntries] = useState<FinanceEntry[]>([]);
-  const [todayDraft, setTodayDraft] = useState<Record<MetricKey, number>>(emptyMetrics());
-  const [savingMetrics, setSavingMetrics] = useState(false);
+  const [metrics, setMetrics] = useState({ today: 0, bestDay: 0, monthTotal: 0, allTime: 0 });
 
   const today = useMemo(() => localTodayISO(), []);
   const now = useMemo(() => new Date(), []);
 
-  const monthStart = useMemo(() => startOfMonthISO(now), [now]);
-
   const reload = useCallback(async (uid: string) => {
     setError(null);
-    const [mRes, fRes] = await Promise.all([
-      supabase.from("admin_daily_metrics").select("*").eq("user_id", uid),
-      supabase.from("admin_finance_entries").select("*").eq("user_id", uid).order("occurred_on", { ascending: true }),
-    ]);
+    const { data, error: qErr } = await supabase
+      .from("lead_outreach_events")
+      .select("created_at")
+      .eq("created_by", uid);
 
-    let err: string | null = null;
-    if (mRes.error) err = mRes.error.message;
-    if (fRes.error) err = err ? `${err} · ${fRes.error.message}` : fRes.error.message;
-    setError(err);
+    if (qErr) {
+      setError(qErr.message);
+      return;
+    }
 
-    if (!mRes.error) setMetricRows((mRes.data ?? []) as DailyMetricRow[]);
-    if (!fRes.error) setFinanceEntries((fRes.data ?? []) as FinanceEntry[]);
-  }, []);
+    const rows = (data ?? []) as { created_at: string }[];
+    setMetrics(aggregateOutreachMetrics(rows, today, now));
+  }, [today, now]);
 
   useEffect(() => {
     let cancelled = false;
@@ -148,7 +86,6 @@ export default function AdminDashboardPage() {
         setLoading(false);
         return;
       }
-      setUserId(user.id);
       await reload(user.id);
       setLoading(false);
     })();
@@ -156,72 +93,6 @@ export default function AdminDashboardPage() {
       cancelled = true;
     };
   }, [reload]);
-
-  useEffect(() => {
-    const row = metricRows.find((r) => r.date === today);
-    if (row) {
-      const next = emptyMetrics();
-      for (const k of METRIC_KEYS) next[k] = Number(row[k] ?? 0);
-      setTodayDraft(next);
-    } else {
-      setTodayDraft(emptyMetrics());
-    }
-  }, [metricRows, today]);
-
-  const monthTotals = useMemo(() => {
-    const inMonth = metricRows.filter((r) => r.date >= monthStart && r.date <= today);
-    return sumMetrics(inMonth);
-  }, [metricRows, monthStart, today]);
-
-  const allTimeTotals = useMemo(() => sumMetrics(metricRows), [metricRows]);
-
-  const financeMonth = useMemo(() => {
-    const monthRows = financeEntries.filter((e) => e.occurred_on >= monthStart && e.occurred_on <= today);
-    const inc = sumIncome(monthRows);
-    const exp = sumExpense(monthRows);
-    return { income: inc, expense: exp, net: inc - exp };
-  }, [financeEntries, monthStart, today]);
-
-  const financeMonthDaily = useMemo(() => {
-    const [yStr, mStr, dStr] = today.split("-");
-    const y = parseInt(yStr, 10);
-    const m = parseInt(mStr, 10) - 1;
-    const currentDayNum = parseInt(dStr, 10);
-    const buckets: { day: number; income: number; expense: number }[] = [];
-    for (let d = 1; d <= currentDayNum; d += 1) {
-      const iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const dayRows = financeEntries.filter((e) => e.occurred_on === iso);
-      buckets.push({
-        day: d,
-        income: sumIncome(dayRows),
-        expense: sumExpense(dayRows),
-      });
-    }
-    return buckets;
-  }, [financeEntries, today]);
-
-  const financeMonthIsEmpty = financeMonth.income === 0 && financeMonth.expense === 0;
-
-  const saveTodayMetrics = async () => {
-    if (!userId) return;
-    setSavingMetrics(true);
-    setError(null);
-    const payload = {
-      user_id: userId,
-      date: today,
-      ...todayDraft,
-      updated_at: new Date().toISOString(),
-    };
-    const { error: upErr } = await supabase.from("admin_daily_metrics").upsert(payload, {
-      onConflict: "user_id,date",
-    });
-    setSavingMetrics(false);
-    if (upErr) {
-      setError(upErr.message);
-      return;
-    }
-    await reload(userId);
-  };
 
   if (loading) {
     return (
@@ -246,105 +117,37 @@ export default function AdminDashboardPage() {
 
       {error && <div className={styles.errorBanner}>{error}</div>}
 
-      <section className={styles.card} aria-label={a?.dashboardFinanceSnapshot ?? "This month finance"}>
-        <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}>{a?.dashboardFinanceSnapshot ?? "This month — finance"}</h2>
-          <Link href="/admin/financai" className={styles.ledgerLink}>
-            {a?.dashboardViewFinancai ?? "Ledger"} <span aria-hidden>→</span>
-          </Link>
-        </div>
-
-        <div className={styles.financeBody}>
-          <div className={styles.statRail}>
-            <div className={styles.statCell}>
-              <span className={styles.statLabel}>{a?.dashboardRevenue ?? "Income"}</span>
-              <p className={styles.statValue}>{formatEur(financeMonth.income)}</p>
-            </div>
-            <div className={styles.statCell}>
-              <span className={styles.statLabel}>{a?.dashboardExpenses ?? "Expenses"}</span>
-              <p className={styles.statValue}>{formatEur(financeMonth.expense)}</p>
-            </div>
-            <div className={styles.statCell}>
-              <span className={styles.statLabel}>{a?.dashboardNetProfit ?? "Net"}</span>
-              <p
-                className={[
-                  styles.statValue,
-                  financeMonth.net >= 0 ? styles.statValueNetPos : styles.statValueNetNeg,
-                ].join(" ")}
-              >
-                {formatEur(financeMonth.net)}
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.chartWrap}>
-            <AdminFinanceMonthChart
-              days={financeMonthDaily}
-              ariaLabel={a?.dashboardFinanceChartLegend}
-              isEmpty={financeMonthIsEmpty}
-              emptyLabel={a?.dashboardFinanceNoActivity}
-            />
-            {!financeMonthIsEmpty && (
-              <p
-                className="mt-1.5 text-center text-[10px] font-medium md:text-left"
-                style={{ color: "var(--admin-text-muted)", opacity: 0.65, letterSpacing: "0.02em" }}
-              >
-                {a?.dashboardFinanceChartLegend}
-              </p>
-            )}
-          </div>
-        </div>
-      </section>
-
       <section className={styles.card} aria-label={a?.dashboardMilestonesTitle ?? "Milestones"}>
         <div className={styles.cardHeader}>
           <h2 className={styles.cardTitle}>{a?.dashboardMilestonesTitle ?? "Milestones"}</h2>
-          <button
-            type="button"
-            onClick={() => void saveTodayMetrics()}
-            disabled={savingMetrics || !userId}
-            className={styles.saveBtn}
-          >
-            {savingMetrics ? (a?.dashboardSavingMilestones ?? "…") : (a?.dashboardSaveMilestones ?? "Save")}
-          </button>
         </div>
 
-        <div className={styles.tableScroll}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>{a?.dashboardTableMetric ?? "Metric"}</th>
-                <th>{a?.dashboardKeyToday ?? "Today"}</th>
-                <th>{a?.dashboardThisMonth ?? "Month"}</th>
-                <th>{a?.dashboardAllTime ?? "All"}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {METRIC_KEYS.map((key) => (
-                <tr key={key}>
-                  <td>{(a?.[METRIC_LABEL_KEYS[key]] as string) ?? key}</td>
-                  <td>
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={todayDraft[key]}
-                      onChange={(ev) =>
-                        setTodayDraft((d) => ({
-                          ...d,
-                          [key]: Math.max(0, Math.floor(Number(ev.target.value) || 0)),
-                        }))
-                      }
-                      className={`admin-input ${styles.tableInput}`}
-                      aria-label={(a?.[METRIC_LABEL_KEYS[key]] as string) ?? key}
-                    />
-                  </td>
-                  <td>{monthTotals[key]}</td>
-                  <td>{allTimeTotals[key]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className={styles.milestoneBody}>
+          <div className={styles.milestoneGrid}>
+            <div className={styles.milestoneCell}>
+              <span className={styles.milestoneLabel}>{a?.dashboardKeyToday ?? "Today"}</span>
+              <p className={styles.milestoneValue}>{metrics.today}</p>
+            </div>
+            <div className={`${styles.milestoneCell} ${styles.milestoneCellHighlight}`}>
+              <span className={styles.milestoneLabel}>{a?.dashboardOutreachRecord ?? "Best day"}</span>
+              <p className={styles.milestoneValue}>{metrics.bestDay}</p>
+            </div>
+            <div className={styles.milestoneCell}>
+              <span className={styles.milestoneLabel}>{a?.dashboardThisMonth ?? "This month"}</span>
+              <p className={styles.milestoneValue}>{metrics.monthTotal}</p>
+            </div>
+            <div className={styles.milestoneCell}>
+              <span className={styles.milestoneLabel}>{a?.dashboardAllTime ?? "All time"}</span>
+              <p className={styles.milestoneValue}>{metrics.allTime}</p>
+            </div>
+          </div>
+
+          <p className={styles.milestoneHint}>
+            {(a?.dashboardOutreachBeatHint ?? "Your best day so far: {n} sends.").replace(
+              "{n}",
+              String(metrics.bestDay)
+            )}
+          </p>
         </div>
       </section>
     </div>

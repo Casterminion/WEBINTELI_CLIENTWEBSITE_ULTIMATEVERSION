@@ -1,0 +1,25 @@
+/**
+ * Pasted email HTML — do NOT use Tailwind `prose` here: it overrides margins/line-height
+ * and breaks Outlook/Gmail-style layouts. Inline styles from the email should win.
+ */
+.root {
+  font-size: 0.875rem;
+  color: var(--admin-text);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.root :global(table) {
+  border-collapse: collapse;
+  max-width: 100%;
+}
+
+.root :global(td),
+.root :global(th) {
+  vertical-align: top;
+}
+
+.root :global(img) {
+  max-width: 100%;
+  height: auto;
+}

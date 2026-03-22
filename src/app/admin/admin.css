@@ -83,6 +83,17 @@
   background: var(--admin-bg-elevated) !important;
 }
 
+/* My leads: follow-up due today — keep accent strip + tint on hover */
+.admin-console .admin-table-row.my-lead-followup-today:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.14) 0%,
+    rgba(59, 130, 246, 0.06) 45%,
+    transparent 100%
+  ) !important;
+  box-shadow: inset 4px 0 0 var(--admin-accent) !important;
+}
+
 .admin-console table th,
 .admin-console table td {
   vertical-align: middle !important;
