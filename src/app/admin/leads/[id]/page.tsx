@@ -8,6 +8,23 @@ import { supabase } from "@/lib/supabase";
 
 const SERVICE_OPTIONS = ["SEO", "PPC", "Content", "Other"];
 
+const STATUS_OPTIONS = [
+  { value: "contacted", label: "Contacted" },
+  { value: "replies", label: "Replies" },
+  { value: "meeting_agreed", label: "Meeting agreed" },
+  { value: "agreed_to_pay", label: "Agreed to pay" },
+  { value: "sent_agreement", label: "Sent agreement" },
+  { value: "current_client", label: "Current client" },
+  { value: "lost", label: "Lost" },
+] as const;
+
+function formatStatus(status: string): string {
+  const opt = STATUS_OPTIONS.find((o) => o.value === status);
+  if (opt) return opt.label;
+  if (status === "new") return "New";
+  return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
+}
+
 type EditForm = {
   name: string;
   email: string;
@@ -17,6 +34,7 @@ type EditForm = {
   industry: string;
   service: string;
   package_price_display: string;
+  notes: string;
 };
 
 type Lead = {
@@ -36,6 +54,7 @@ type Lead = {
   loom_url: string | null;
   claimed_at: string | null;
   outreach_email: string | null;
+  notes: string | null;
 };
 
 function getFollowUpDueDates(): string[] {
@@ -62,10 +81,8 @@ export default function LeadDetailPage() {
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [action, setAction] = useState<"called" | "emailed" | "loom_sent" | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [markingLost, setMarkingLost] = useState(false);
-  const [markingSold, setMarkingSold] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
@@ -77,6 +94,7 @@ export default function LeadDetailPage() {
     industry: "",
     service: "SEO",
     package_price_display: "",
+    notes: "",
   });
 
   const loadLead = useCallback(async () => {
@@ -102,7 +120,7 @@ export default function LeadDetailPage() {
   }, [loadLead]);
 
   const handleClaim = async () => {
-    if (!id || !action) return;
+    if (!id) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setSubmitting(true);
@@ -112,7 +130,7 @@ export default function LeadDetailPage() {
       .from("intake_submissions")
       .update({
         assigned_to: user.id,
-        status: action,
+        status: "contacted",
         claimed_at: now,
       })
       .eq("id", id);
@@ -137,28 +155,16 @@ export default function LeadDetailPage() {
     router.push("/admin/my-leads");
   };
 
-  const handleMarkLost = async () => {
+  const handleStatusChange = async (newStatus: string) => {
     if (!id) return;
-    setMarkingLost(true);
+    setUpdatingStatus(true);
     const { error: err } = await supabase
       .from("intake_submissions")
-      .update({ status: "lost" })
+      .update({ status: newStatus })
       .eq("id", id);
     if (err) setError(err.message);
     else await loadLead();
-    setMarkingLost(false);
-  };
-
-  const handleMarkSold = async () => {
-    if (!id) return;
-    setMarkingSold(true);
-    const { error: err } = await supabase
-      .from("intake_submissions")
-      .update({ status: "sold" })
-      .eq("id", id);
-    if (err) setError(err.message);
-    else await loadLead();
-    setMarkingSold(false);
+    setUpdatingStatus(false);
   };
 
   const startEditing = useCallback(() => {
@@ -172,6 +178,7 @@ export default function LeadDetailPage() {
       industry: lead.industry ?? "",
       service: lead.service ?? "SEO",
       package_price_display: lead.package_price_display ?? "",
+      notes: lead.notes ?? "",
     });
     setError(null);
     setIsEditing(true);
@@ -192,6 +199,7 @@ export default function LeadDetailPage() {
         industry: editForm.industry.trim(),
         service: editForm.service.trim() || "SEO",
         package_price_display: editForm.package_price_display.trim(),
+        notes: editForm.notes.trim() || null,
       })
       .eq("id", id);
     setSaving(false);
@@ -371,6 +379,16 @@ export default function LeadDetailPage() {
                     placeholder="e.g. 397 € / mėn."
                   />
                 </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>Notes</label>
+                  <textarea
+                    value={editForm.notes}
+                    onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
+                    rows={4}
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm resize-y"
+                    placeholder="Internal notes about this lead…"
+                  />
+                </div>
               </div>
               {error && <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>}
               <div className="flex gap-3 pt-2">
@@ -450,9 +468,13 @@ export default function LeadDetailPage() {
             {lead?.status && lead.status !== "new" && (
               <div className="flex flex-col gap-0.5">
                 <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Status</dt>
-              <dd style={{ color: "var(--admin-text)" }}>
-                {lead.status === "loom_sent" ? "Sent loom video" : lead.status === "sold" ? "Sold" : lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-              </dd>
+                <dd style={{ color: "var(--admin-text)" }}>{formatStatus(lead.status)}</dd>
+              </div>
+            )}
+            {lead?.notes && (
+              <div className="flex flex-col gap-0.5 sm:col-span-2">
+                <dt className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>Notes</dt>
+                <dd className="whitespace-pre-wrap text-sm" style={{ color: "var(--admin-text)" }}>{lead.notes}</dd>
               </div>
             )}
           </dl>
@@ -466,53 +488,15 @@ export default function LeadDetailPage() {
             style={{ borderColor: "var(--admin-border)" }}
           >
             <p className="text-sm font-medium" style={{ color: "var(--admin-text)" }}>
-              Claim this lead: choose how you contacted them (required).
+              Claim this lead to assign it to yourself and set status to Contacted.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => setAction("called")}
-                className="rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors"
-                style={{
-                  borderColor: action === "called" ? "var(--admin-accent)" : "var(--admin-border)",
-                  background: action === "called" ? "var(--admin-accent-dim)" : "transparent",
-                  color: action === "called" ? "var(--admin-accent)" : "var(--admin-text)",
-                }}
-              >
-                Called
-              </button>
-              <button
-                type="button"
-                onClick={() => setAction("emailed")}
-                className="rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors"
-                style={{
-                  borderColor: action === "emailed" ? "var(--admin-accent)" : "var(--admin-border)",
-                  background: action === "emailed" ? "var(--admin-accent-dim)" : "transparent",
-                  color: action === "emailed" ? "var(--admin-accent)" : "var(--admin-text)",
-                }}
-              >
-                Emailed
-              </button>
-              <button
-                type="button"
-                onClick={() => setAction("loom_sent")}
-                className="rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors"
-                style={{
-                  borderColor: action === "loom_sent" ? "var(--admin-accent)" : "var(--admin-border)",
-                  background: action === "loom_sent" ? "var(--admin-accent-dim)" : "transparent",
-                  color: action === "loom_sent" ? "var(--admin-accent)" : "var(--admin-text)",
-                }}
-              >
-                Sent loom video
-              </button>
-            </div>
             {error && (
               <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>
             )}
             <button
               type="button"
               onClick={handleClaim}
-              disabled={!action || submitting}
+              disabled={submitting}
               className="rounded-lg px-4 py-2.5 text-sm font-medium transition-opacity disabled:opacity-50"
               style={{
                 background: "var(--admin-accent)",
@@ -541,41 +525,26 @@ export default function LeadDetailPage() {
                 </a>
               </div>
             )}
-            {lead?.status !== "lost" && lead?.status !== "sold" && (
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={handleMarkSold}
-                  disabled={markingSold}
-                  className="rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors"
-                  style={{
-                    borderColor: "var(--admin-accent)",
-                    background: "var(--admin-accent-dim)",
-                    color: "var(--admin-accent)",
-                  }}
-                >
-                  {markingSold ? "Updating…" : "Mark as sold"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleMarkLost}
-                  disabled={markingLost}
-                  className="rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors"
-                  style={{
-                    borderColor: "var(--admin-border)",
-                    color: "var(--admin-text-muted)",
-                  }}
-                >
-                  {markingLost ? "Updating…" : "Mark as lost"}
-                </button>
-              </div>
-            )}
-            {lead?.status === "lost" && (
-              <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>This lead is marked as lost.</p>
-            )}
-            {lead?.status === "sold" && (
-              <p className="text-sm" style={{ color: "var(--admin-accent)" }}>This lead is marked as sold.</p>
-            )}
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>Status</label>
+              <select
+                value={lead?.status ?? "contacted"}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                disabled={updatingStatus}
+                className="admin-input rounded-lg px-3 py-2 text-sm max-w-xs"
+              >
+                <option value="contacted">Contacted</option>
+                <option value="replies">Replies</option>
+                <option value="meeting_agreed">Meeting agreed</option>
+                <option value="agreed_to_pay">Agreed to pay</option>
+                <option value="sent_agreement">Sent agreement</option>
+                <option value="current_client">Current client</option>
+                <option value="lost">Lost</option>
+              </select>
+              {updatingStatus && (
+                <span className="ml-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>Updating…</span>
+              )}
+            </div>
           </div>
         )}
       </section>

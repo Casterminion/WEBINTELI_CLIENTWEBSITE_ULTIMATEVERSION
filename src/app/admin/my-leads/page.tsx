@@ -25,10 +25,13 @@ type Lead = {
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
   { value: "new", label: "New" },
-  { value: "called", label: "Called" },
-  { value: "emailed", label: "Emailed" },
-  { value: "loom_sent", label: "Sent loom video" },
-  { value: "sold", label: "Sold" },
+  { value: "contacted", label: "Contacted" },
+  { value: "replies", label: "Replies" },
+  { value: "meeting_agreed", label: "Meeting agreed" },
+  { value: "agreed_to_pay", label: "Agreed to pay" },
+  { value: "sent_agreement", label: "Sent agreement" },
+  { value: "current_client", label: "Current client" },
+  { value: "lost", label: "Lost" },
 ];
 
 const SERVICE_OPTIONS = ["SEO", "PPC", "Content", "Other"];
@@ -213,9 +216,9 @@ export default function MyLeadsPage() {
   };
 
   const formatStatus = (status: string) => {
-    if (status === "loom_sent") return "Sent loom video";
-    if (status === "sold") return "Sold";
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    const opt = STATUS_OPTIONS.find((o) => o.value === status);
+    if (opt) return opt.label;
+    return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
   };
 
   const openDeleteConfirm = useCallback((e: React.MouseEvent, leadId: string) => {
