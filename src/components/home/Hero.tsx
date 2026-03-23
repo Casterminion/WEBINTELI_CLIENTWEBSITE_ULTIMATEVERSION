@@ -1,39 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getNativeCountryName } from '@/data/nativeCountryNames';
 import PremiumButton from '../ui/PremiumButton';
 import styles from './Hero.module.css';
 
 const Hero: React.FC = () => {
   const { t } = useLanguage();
-  const [location, setLocation] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchLocation = async () => {
-      try {
-        const res = await fetch('https://ipapi.co/json/?fields=city,country_name,country_code');
-        if (!res.ok) throw new Error('Geo fetch failed');
-        const data = await res.json() as { city?: string; country_name?: string; country_code?: string };
-        const city = data?.city ?? '';
-        const countryEnglish = data?.country_name ?? '';
-        const countryCode = data?.country_code ?? '';
-        const country = getNativeCountryName(countryCode, countryEnglish);
-        if (!cancelled && (city || country)) {
-          setLocation([country, city].filter(Boolean).join(', '));
-        }
-      } catch {
-        /* Leave location null so the block is hidden */
-      }
-    };
-    fetchLocation();
-    return () => { cancelled = true; };
-  }, []);
 
   // Split title to apply formatting
   const titleParts = t.hero.title.split(',');
@@ -50,16 +26,15 @@ const Hero: React.FC = () => {
       <div className={`container ${styles.container}`}>
         <div className={styles.heroGrid}>
           <div className={styles.heroLeft}>
-            {location ? (
-              <motion.p 
-                className={styles.location}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-              >
-                <span className={styles.locationDot} /> {location}
-              </motion.p>
-            ) : null}
+            <motion.p
+              className={styles.location}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+            >
+              <span className={styles.locationDot} aria-hidden />
+              {t.hero.spotsLeftThisMonth ?? "1 spot left this month…"}
+            </motion.p>
 
             <motion.h1 
               className={styles.title}

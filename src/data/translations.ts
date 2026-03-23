@@ -44,6 +44,7 @@ export const translations = {
     hero: {
       title: 'TOP 3 Google Maps within 90 days – or we work for free.',
       subtitle: '75% of all search requests go to the top 3 results on Google Maps. And if you\'re not in the top 3, you\'re essentially invisible.',
+      spotsLeftThisMonth: '1 spot left this month…',
       packagesBtn: 'SEE PACKAGES',
       howItWorksBtn: 'HOW IT WORKS',
       metrics: {
@@ -673,6 +674,7 @@ export const translations = {
     hero: {
       title: 'TOP 3 Google Maps per 90 dienų – arba dirbame nemokamai.',
       subtitle: '75% visų paieškos užklausų tenka pirmiesiems 3 rezultatams Google žemėlapiuose. Jei jūsų nėra tarp jų – esate praktiškai nematomi.',
+      spotsLeftThisMonth: 'Šį mėnesį liko 1 laisva vieta…',
       packagesBtn: 'ŽIŪRĖTI PAKETUS',
       howItWorksBtn: 'KAIP TAI VEIKIA',
       metrics: {
