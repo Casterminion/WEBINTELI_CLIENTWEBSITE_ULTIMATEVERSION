@@ -9,6 +9,7 @@ import { Inbox, Landmark, LayoutDashboard, LogOut, UserCheck, ListTodo, Menu, X 
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AdminInstallPrompt from "./AdminInstallPrompt";
+import AdminReleaseBanner from "./AdminReleaseBanner";
 import PushOptInBanner from "./PushOptInBanner";
 
 type Props = {
@@ -274,6 +275,7 @@ export default function AdminShell({ children }: Props) {
             pathname === "/admin/dashboard" ? "py-3 md:py-4" : "py-4 md:py-6",
           ].join(" ")}
         >
+          <AdminReleaseBanner />
           <AdminInstallPrompt />
           <PushOptInBanner />
           {children}

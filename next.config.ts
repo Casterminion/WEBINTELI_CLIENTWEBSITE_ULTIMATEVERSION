@@ -1,6 +1,21 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const pkg = JSON.parse(
+  readFileSync(join(process.cwd(), "package.json"), "utf8"),
+) as { version: string };
+
+/** Shown in admin “new release” banner; changes each deploy on Vercel (git SHA). */
+const appRelease =
+  process.env.NEXT_PUBLIC_APP_RELEASE?.trim() ||
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||
+  `dev-${pkg.version}`;
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_RELEASE: appRelease,
+  },
   images: {
     formats: ["image/avif", "image/webp"],
   },

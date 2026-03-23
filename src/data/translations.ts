@@ -446,6 +446,11 @@ export const translations = {
       alert: 'Alert',
       enableNotifications: 'Enable notifications to receive instant alerts when new leads arrive.',
       enableAlerts: 'Enable alerts',
+      newReleaseTitle: 'New version deployed',
+      newReleaseBuild: 'Build',
+      newReleaseBody:
+        'Websites cannot change your phone’s home screen icon by themselves. To get the latest app icon: remove this shortcut from the home screen (or uninstall the installed app), open the site in Safari/Chrome, then use Add to Home Screen / Install app again.',
+      newReleaseDismiss: 'Got it — hide until next deploy',
       newLead: 'New lead',
       leadsAssigned: 'Leads assigned to you. Click a row to open the lead.',
       addLead: 'Add lead',
@@ -1053,6 +1058,11 @@ export const translations = {
       alert: 'Įspėjimas',
       enableNotifications: 'Įjunkite pranešimus, kad gautumėte momentinius pranešimus apie naujus potencialius klientus.',
       enableAlerts: 'Įjungti pranešimus',
+      newReleaseTitle: 'Įdiegtas naujas leidimas',
+      newReleaseBuild: 'Versija',
+      newReleaseBody:
+        'Svetainė negali pati pakeisti piktogramos pagrindiniame ekrane. Norėdami matyti naują programėlės ikoną: pašalinkite šį spartųjį klavišą (arba išdiekite įdiegtą programą), naršyklėje atidarykite svetainę ir vėl naudokite „Pridėti prie pagrindinio ekrano“ / „Įdiegti programą“.',
+      newReleaseDismiss: 'Supratau — slėpti iki kito diegimo',
       newLead: 'Naujas potencialus klientas',
       leadsAssigned: 'Jums priskirti potencialūs klientai. Spustelėkite eilutę, kad atidarytumėte.',
       addLead: 'Pridėti potencialų klientą',

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { 
   Facebook, 
@@ -44,8 +45,22 @@ const Footerdemo: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
           <div className="group">
-            <div className="flex items-center mb-8">
-              <span className="text-xl font-bold tracking-tight text-foreground">
+            <div className="flex items-center gap-0 mb-8">
+              <Image
+                src="/LogoInWebesitePublic/logodarknobakcgound.png"
+                alt="Webinteli"
+                width={48}
+                height={48}
+                className="h-12 w-12 shrink-0 -translate-y-[3px] object-contain dark:hidden"
+              />
+              <Image
+                src="/LogoInWebesitePublic/logolightnobackground.png"
+                alt="Webinteli"
+                width={48}
+                height={48}
+                className="hidden h-12 w-12 shrink-0 -translate-y-[3px] object-contain dark:block"
+              />
+              <span className="-ml-1.5 text-xl font-bold tracking-tight text-foreground">
                 Webinteli
               </span>
             </div>

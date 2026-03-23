@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
@@ -101,7 +102,15 @@ const Navbar: React.FC = () => {
     >
       <div className={`container ${styles.inner}`}>
         <Link href="/" className={styles.logo}>
-          {siteName}
+          <Image
+            src={isScrolled ? '/LogoInWebesitePublic/logodarknobakcgound.png' : '/LogoInWebesitePublic/logolightnobackground.png'}
+            alt={siteName}
+            width={48}
+            height={48}
+            className={styles.logoImage}
+            priority
+          />
+          <span>{siteName}</span>
         </Link>
 
         <nav className={styles.nav}>
