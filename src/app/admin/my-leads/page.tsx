@@ -14,6 +14,19 @@ import {
   type AdminServiceOption,
 } from "@/data/adminServiceOptions";
 
+function uniqueSortedBusinessNames(rows: { name: string | null }[]): string[] {
+  const set = new Set<string>();
+  for (const r of rows) {
+    const n = (r.name ?? "").trim();
+    if (n) set.add(n);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
+function namesMatchCaseInsensitive(a: string, b: string): boolean {
+  return a.trim().localeCompare(b.trim(), undefined, { sensitivity: "base" }) === 0;
+}
+
 type Lead = {
   id: string;
   name: string;
@@ -43,6 +56,12 @@ const STATUS_VALUES = [
   { value: "current_client", key: "statusCurrentClient" as const },
   { value: "lost", key: "statusLost" as const },
 ] as const;
+
+type MainLeadsTab = "active" | "lost" | "won";
+
+function isPipelineStatus(status: string) {
+  return status !== "lost" && status !== "current_client";
+}
 
 export default function MyLeadsPage() {
   const { t } = useLanguage();
@@ -74,12 +93,16 @@ export default function MyLeadsPage() {
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  /** All business names this user ever had on a lead (any status) — for autocomplete & duplicate hints */
+  const [businessNameSuggestions, setBusinessNameSuggestions] = useState<string[]>([]);
+  const [mainTab, setMainTab] = useState<MainLeadsTab>("active");
 
   /** Open add-lead modal when arriving from lead detail (?add=1), then strip query from URL */
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("add") !== "1") return;
+    setMainTab("active");
     setAddLeadOpen(true);
     router.replace("/admin/my-leads", { scroll: false });
   }, [router]);
@@ -91,12 +114,11 @@ export default function MyLeadsPage() {
         setLoading(false);
         return;
       }
-      const [leadsRes, tasksRes] = await Promise.all([
+      const [leadsRes, tasksRes, namesRes] = await Promise.all([
         supabase
           .from("intake_submissions")
           .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at, outreach_email, notes, website")
           .eq("assigned_to", user.id)
-          .neq("status", "lost")
           .order("claimed_at", { ascending: false }),
         supabase
           .from("tasks")
@@ -104,6 +126,7 @@ export default function MyLeadsPage() {
           .eq("assigned_to", user.id)
           .eq("due_date", todayISODateUtc())
           .is("completed_at", null),
+        supabase.from("intake_submissions").select("name").eq("assigned_to", user.id),
       ]);
       if (leadsRes.error) {
         setError(leadsRes.error.message);
@@ -116,6 +139,11 @@ export default function MyLeadsPage() {
       } else {
         setTodayLeadIds(new Set());
       }
+      if (!namesRes.error && namesRes.data) {
+        setBusinessNameSuggestions(uniqueSortedBusinessNames(namesRes.data as { name: string | null }[]));
+      } else {
+        setBusinessNameSuggestions([]);
+      }
       setLoading(false);
     };
     void load();
@@ -126,8 +154,25 @@ export default function MyLeadsPage() {
     [leads]
   );
 
+  const tabLeads = useMemo(() => {
+    if (mainTab === "lost") return leads.filter((l) => l.status === "lost");
+    if (mainTab === "won") return leads.filter((l) => l.status === "current_client");
+    return leads.filter((l) => isPipelineStatus(l.status));
+  }, [leads, mainTab]);
+
+  const tabCounts = useMemo(
+    () => ({
+      active: leads.filter((l) => isPipelineStatus(l.status)).length,
+      lost: leads.filter((l) => l.status === "lost").length,
+      won: leads.filter((l) => l.status === "current_client").length,
+    }),
+    [leads]
+  );
+
+  const pipelineLeads = useMemo(() => leads.filter((l) => isPipelineStatus(l.status)), [leads]);
+
   const filtered = useMemo(() => {
-    let list = leads;
+    let list = tabLeads;
     const term = search.trim().toLowerCase();
     if (term) {
       list = list.filter((l) => {
@@ -138,15 +183,33 @@ export default function MyLeadsPage() {
         return haystack.includes(term);
       });
     }
-    if (statusFilter !== "all") list = list.filter((l) => l.status === statusFilter);
+    if (mainTab === "active" && statusFilter !== "all") list = list.filter((l) => l.status === statusFilter);
     if (serviceFilter !== "all") list = list.filter((l) => l.service === serviceFilter);
-    if (followUpToday) list = list.filter((l) => todayLeadIds.has(l.id));
+    if (mainTab === "active" && followUpToday) list = list.filter((l) => todayLeadIds.has(l.id));
     return list;
-  }, [leads, search, statusFilter, serviceFilter, followUpToday, todayLeadIds]);
+  }, [tabLeads, mainTab, search, statusFilter, serviceFilter, followUpToday, todayLeadIds]);
+
+  const tabSubtitle = useMemo(() => {
+    if (mainTab === "lost") return t.admin?.myLeadsTabLostSubtitle ?? "";
+    if (mainTab === "won") return t.admin?.myLeadsTabWonSubtitle ?? "";
+    return t.admin?.leadsAssigned ?? "";
+  }, [mainTab, t.admin]);
+
+  const addLeadNameTrimmed = addLeadForm.name.trim();
+
+  const duplicateActiveLead = useMemo(() => {
+    if (!addLeadNameTrimmed) return null;
+    return pipelineLeads.find((l) => namesMatchCaseInsensitive(l.name, addLeadNameTrimmed)) ?? null;
+  }, [addLeadNameTrimmed, pipelineLeads]);
+
+  const duplicateInHistoryOnly = useMemo(() => {
+    if (!addLeadNameTrimmed || duplicateActiveLead) return false;
+    return businessNameSuggestions.some((s) => namesMatchCaseInsensitive(s, addLeadNameTrimmed));
+  }, [addLeadNameTrimmed, duplicateActiveLead, businessNameSuggestions]);
 
   const handleAddLead = async () => {
     const { name, email, service } = addLeadForm;
-    if (!name.trim() || !email.trim()) return;
+    if (!name.trim()) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setAddLeadSubmitting(true);
@@ -154,7 +217,7 @@ export default function MyLeadsPage() {
       .from("intake_submissions")
       .insert({
         name: name.trim(),
-        email: email.trim(),
+        email: email.trim() || "",
         phone: addLeadForm.phone.trim() || null,
         business_owner_name: addLeadForm.business_owner_name.trim() || null,
         city: "—",
@@ -190,6 +253,7 @@ export default function MyLeadsPage() {
       setAddLeadSubmitting(false);
       return;
     }
+    const addedName = name.trim();
     setAddLeadForm({
       name: "",
       email: "",
@@ -202,11 +266,14 @@ export default function MyLeadsPage() {
     setAddLeadOpen(false);
     setAddLeadSubmitting(false);
     setError(null);
+    setBusinessNameSuggestions((prev) => {
+      if (!addedName || prev.some((s) => namesMatchCaseInsensitive(s, addedName))) return prev;
+      return [...prev, addedName].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    });
     const { data: refreshed } = await supabase
       .from("intake_submissions")
       .select("id, name, email, phone, business_owner_name, city, industry, service, package_price_display, status, claimed_at, created_at, outreach_email, notes, website")
       .eq("assigned_to", user.id)
-      .neq("status", "lost")
       .order("claimed_at", { ascending: false });
     setLeads((refreshed as Lead[]) ?? []);
     setTodayLeadIds((prev) => new Set([...prev, leadId]));
@@ -289,7 +356,7 @@ export default function MyLeadsPage() {
             {t.admin?.myLeads ?? "My leads"}
           </h1>
           <p className="mt-0.5 max-w-xl text-xs" style={{ color: "var(--admin-text-muted)" }}>
-            {t.admin?.leadsAssigned ?? "Leads assigned to you. Click a row to open the lead."}
+            {tabSubtitle}
           </p>
         </div>
         <div className="admin-metric flex items-center gap-4 rounded-md px-4 py-2.5 tabular-nums">
@@ -301,6 +368,49 @@ export default function MyLeadsPage() {
           </span>
         </div>
       </header>
+
+      <div
+        className="flex flex-wrap gap-1 rounded-lg border p-1"
+        style={{ borderColor: "var(--admin-border)", background: "var(--admin-bg)" }}
+        role="tablist"
+        aria-label={t.admin?.myLeads ?? "My leads"}
+      >
+        {(
+          [
+            { id: "active" as const, label: t.admin?.myLeadsTabActive ?? "Active", count: tabCounts.active },
+            { id: "lost" as const, label: t.admin?.myLeadsTabLost ?? "Lost", count: tabCounts.lost },
+            { id: "won" as const, label: t.admin?.myLeadsTabWon ?? "Won", count: tabCounts.won },
+          ] as const
+        ).map((tab) => {
+          const selected = mainTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setMainTab(tab.id)}
+              className="inline-flex min-h-[2.25rem] flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors sm:flex-none sm:px-4"
+              style={{
+                background: selected ? "var(--admin-accent-dim)" : "transparent",
+                color: selected ? "var(--admin-accent)" : "var(--admin-text-muted)",
+                boxShadow: selected ? "inset 0 0 0 1px color-mix(in srgb, var(--admin-accent) 35%, transparent)" : undefined,
+              }}
+            >
+              <span>{tab.label}</span>
+              <span
+                className="tabular-nums rounded px-1.5 py-0.5 text-[10px] font-bold"
+                style={{
+                  background: selected ? "rgba(0,0,0,0.15)" : "var(--admin-panel)",
+                  color: selected ? "var(--admin-accent)" : "var(--admin-text-muted)",
+                }}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       <section
         className="rounded-md border overflow-hidden"
@@ -322,25 +432,27 @@ export default function MyLeadsPage() {
           >
             <Filter className="h-3.5 w-3.5 shrink-0" />
             {t.admin?.filters ?? "Filters"}
-            {(search || statusFilter !== "all" || serviceFilter !== "all" || followUpToday) && (
+            {(search || (mainTab === "active" && statusFilter !== "all") || serviceFilter !== "all" || (mainTab === "active" && followUpToday)) && (
               <span className="rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "var(--admin-accent-dim)", color: "var(--admin-accent)" }}>
                 {t.admin?.active ?? "Active"}
               </span>
             )}
             {filtersOpen ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
           </button>
-          <button
-            type="button"
-            onClick={() => setAddLeadOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-90"
-            style={{
-              background: "var(--admin-accent)",
-              color: "#ffffff",
-            }}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {t.admin?.addLead ?? "Add lead"}
-          </button>
+          {mainTab === "active" && (
+            <button
+              type="button"
+              onClick={() => setAddLeadOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-90"
+              style={{
+                background: "var(--admin-accent)",
+                color: "#ffffff",
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t.admin?.addLead ?? "Add lead"}
+            </button>
+          )}
         </div>
         {filtersOpen && (
           <div className="border-t px-4 py-4 space-y-4" style={{ borderColor: "var(--admin-border)" }}>
@@ -358,18 +470,20 @@ export default function MyLeadsPage() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.status ?? "Status"}</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="admin-input w-full rounded-lg px-3 py-2 text-sm"
-                >
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
+              {mainTab === "active" && (
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.status ?? "Status"}</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                  >
+                    {STATUS_OPTIONS.filter((o) => o.value !== "lost" && o.value !== "current_client").map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.service ?? "Service"}</label>
                 <select
@@ -386,18 +500,20 @@ export default function MyLeadsPage() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 text-sm cursor-pointer py-2" style={{ color: "var(--admin-text-muted)" }}>
-                  <input
-                    type="checkbox"
-                    checked={followUpToday}
-                    onChange={(e) => setFollowUpToday(e.target.checked)}
-                    className="rounded border"
-                    style={{ borderColor: "var(--admin-border)" }}
-                  />
-                  {t.admin?.followUpToday ?? "Follow up today"}
-                </label>
-              </div>
+              {mainTab === "active" && (
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer py-2" style={{ color: "var(--admin-text-muted)" }}>
+                    <input
+                      type="checkbox"
+                      checked={followUpToday}
+                      onChange={(e) => setFollowUpToday(e.target.checked)}
+                      className="rounded border"
+                      style={{ borderColor: "var(--admin-border)" }}
+                    />
+                    {t.admin?.followUpToday ?? "Follow up today"}
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -436,20 +552,62 @@ export default function MyLeadsPage() {
                 <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.name ?? "Name"} *</label>
                 <input
                   type="text"
+                  id="add-lead-name"
+                  list="add-lead-business-names"
+                  autoComplete="off"
                   value={addLeadForm.name}
                   onChange={(e) => setAddLeadForm((p) => ({ ...p, name: e.target.value }))}
                   required
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
                   placeholder={t.admin?.leadNamePlaceholder ?? "Lead name"}
                 />
+                <datalist id="add-lead-business-names">
+                  {businessNameSuggestions.map((n) => (
+                    <option key={n} value={n} />
+                  ))}
+                </datalist>
+                <p className="mt-1 text-[11px] leading-snug" style={{ color: "var(--admin-text-muted)" }}>
+                  {t.admin?.addLeadNameAutocompleteHint ?? ""}
+                </p>
+                {duplicateActiveLead && (
+                  <div
+                    className="mt-2 rounded-lg border px-3 py-2 text-xs space-y-2"
+                    style={{ borderColor: "rgba(251, 191, 36, 0.35)", background: "rgba(251, 191, 36, 0.08)" }}
+                  >
+                    <p style={{ color: "var(--admin-text)" }}>
+                      {t.admin?.addLeadDuplicateActive ?? "You already have an active lead with this name."}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-xs font-medium underline-offset-2 hover:underline"
+                      style={{ color: "var(--admin-accent)" }}
+                      onClick={() => {
+                        setAddLeadOpen(false);
+                        router.push(`/admin/leads/${duplicateActiveLead.id}`);
+                      }}
+                    >
+                      {t.admin?.addLeadDuplicateOpen ?? "Open lead"}
+                    </button>
+                  </div>
+                )}
+                {!duplicateActiveLead && duplicateInHistoryOnly && (
+                  <p
+                    className="mt-2 rounded-lg border px-3 py-2 text-xs"
+                    style={{ borderColor: "rgba(251, 191, 36, 0.35)", background: "rgba(251, 191, 36, 0.08)", color: "var(--admin-text)" }}
+                  >
+                    {t.admin?.addLeadDuplicateHistory ?? "This company name is already in your history."}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.email ?? "Email"} *</label>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                  {t.admin?.email ?? "Email"}
+                  <span className="font-normal normal-case opacity-70"> ({t.admin?.optional ?? "optional"})</span>
+                </label>
                 <input
                   type="email"
                   value={addLeadForm.email}
                   onChange={(e) => setAddLeadForm((p) => ({ ...p, email: e.target.value }))}
-                  required
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm"
                   placeholder="email@example.com"
                 />
@@ -557,7 +715,13 @@ export default function MyLeadsPage() {
           <div className="flex flex-col items-center justify-center gap-3 px-5 py-16">
             <Inbox className="h-12 w-12" style={{ color: "var(--admin-text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--admin-text-muted)" }}>
-              {leads.length === 0 ? (t.admin?.noLeads ?? "No leads assigned to you.") : (t.admin?.noLeadsFiltered ?? "No leads match your filters.")}
+              {tabLeads.length === 0
+                ? mainTab === "lost"
+                  ? (t.admin?.noLeadsLostTab ?? "No lost leads.")
+                  : mainTab === "won"
+                    ? (t.admin?.noLeadsWonTab ?? "No won clients yet.")
+                    : (t.admin?.noLeads ?? "No leads assigned to you.")
+                : (t.admin?.noLeadsFiltered ?? "No leads match your filters.")}
             </p>
           </div>
         ) : (
@@ -565,7 +729,7 @@ export default function MyLeadsPage() {
             {/* ── MOBILE CARDS (below md) ── */}
             <div className="md:hidden divide-y" style={{ borderColor: "var(--admin-border)" }}>
               {filtered.map((lead) => {
-                const dueToday = todayLeadIds.has(lead.id);
+                const dueToday = mainTab === "active" && todayLeadIds.has(lead.id);
                 return (
                 <div
                   key={lead.id}
@@ -597,7 +761,7 @@ export default function MyLeadsPage() {
                         )}
                       </div>
                       <p className="text-xs mt-0.5 truncate" style={{ color: "var(--admin-text-muted)" }}>
-                        {lead.email}
+                        {lead.email?.trim() || "—"}
                       </p>
                     </div>
                     <span
@@ -705,7 +869,7 @@ export default function MyLeadsPage() {
                 </thead>
                 <tbody>
                   {filtered.map((lead) => {
-                    const dueToday = todayLeadIds.has(lead.id);
+                    const dueToday = mainTab === "active" && todayLeadIds.has(lead.id);
                     return (
                     <tr
                       key={lead.id}
@@ -752,7 +916,7 @@ export default function MyLeadsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>{lead.email}</td>
+                      <td className="px-4 py-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>{lead.email?.trim() || "—"}</td>
                       <td className="px-4 py-2 hidden sm:table-cell tabular-nums text-sm" style={{ color: "var(--admin-text)" }}>{lead.phone || "—"}</td>
                       <td className="px-4 py-2 hidden md:table-cell text-sm" style={{ color: "var(--admin-text)" }}>{lead.business_owner_name || "—"}</td>
                       <td className="px-4 py-2 text-sm" style={{ color: "var(--admin-text)" }}>{lead.city}</td>
