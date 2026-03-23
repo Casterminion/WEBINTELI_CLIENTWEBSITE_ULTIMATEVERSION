@@ -49,10 +49,10 @@
   flex-shrink: 0;
 }
 
-/* Mobile-first: breathing room so icon + wordmark never collide on narrow viewports */
+/* Icon + wordmark share one baseline (bottom); works on all breakpoints */
 .logo {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.5rem;
   font-size: 1.125rem;
   font-weight: 600;
@@ -66,30 +66,30 @@
   margin-left: 0;
 }
 
-/* Mobile: icon height ~ wordmark cap height (~29px at 1.125rem); desktop stays 48px */
+/* Mobile: ~29px icon vs 1.125rem text; desktop: ~32px vs 1.25rem text (not 48px — was oversized) */
 .logoImage {
   width: 29px;
   height: 29px;
   object-fit: contain;
   flex-shrink: 0;
-  transform: none;
+  transform: translateY(-2px);
 }
 
 @media (min-width: 768px) {
   .logo {
-    gap: 0;
+    gap: 0.375rem;
     font-size: 1.25rem;
   }
 
-  /* Tighten vs transparent padding in the PNG — safe on wider layout */
+  /* Slight overlap OK with transparent PNG padding */
   .logo > span {
-    margin-left: -0.375rem;
+    margin-left: -0.125rem;
   }
 
   .logoImage {
-    width: 48px;
-    height: 48px;
-    transform: translateY(-3px);
+    width: 32px;
+    height: 32px;
+    transform: translateY(-2px);
   }
 }
 

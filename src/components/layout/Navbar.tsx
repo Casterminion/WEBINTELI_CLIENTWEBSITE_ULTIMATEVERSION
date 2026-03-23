@@ -107,7 +107,7 @@ const Navbar: React.FC = () => {
             alt={siteName}
             width={48}
             height={48}
-            sizes="(max-width: 767px) 29px, 48px"
+            sizes="(max-width: 767px) 29px, 32px"
             className={styles.logoImage}
             priority
           />
