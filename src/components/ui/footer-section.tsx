@@ -45,22 +45,24 @@ const Footerdemo: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
           <div className="group">
-            <div className="flex items-center gap-0 mb-8">
+            <div className="mb-8 flex items-center gap-2 md:gap-0">
               <Image
                 src="/LogoInWebesitePublic/logodarknobakcgound.png"
                 alt="Webinteli"
                 width={48}
                 height={48}
-                className="h-12 w-12 shrink-0 -translate-y-[3px] object-contain dark:hidden"
+                sizes="(max-width: 767px) 29px, 48px"
+                className="h-[29px] w-[29px] shrink-0 translate-y-0 object-contain dark:hidden md:h-12 md:w-12 md:-translate-y-[3px]"
               />
               <Image
                 src="/LogoInWebesitePublic/logolightnobackground.png"
                 alt="Webinteli"
                 width={48}
                 height={48}
-                className="hidden h-12 w-12 shrink-0 -translate-y-[3px] object-contain dark:block"
+                sizes="(max-width: 767px) 29px, 48px"
+                className="hidden h-[29px] w-[29px] shrink-0 translate-y-0 object-contain dark:block md:h-12 md:w-12 md:-translate-y-[3px]"
               />
-              <span className="-ml-1.5 text-xl font-bold tracking-tight text-foreground">
+              <span className="ml-0 text-xl font-bold tracking-tight text-foreground md:-ml-1.5">
                 Webinteli
               </span>
             </div>

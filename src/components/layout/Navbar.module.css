@@ -66,9 +66,10 @@
   margin-left: 0;
 }
 
+/* Mobile: icon height ~ wordmark cap height (~29px at 1.125rem); desktop stays 48px */
 .logoImage {
-  width: 48px;
-  height: 48px;
+  width: 29px;
+  height: 29px;
   object-fit: contain;
   flex-shrink: 0;
   transform: none;
@@ -86,6 +87,8 @@
   }
 
   .logoImage {
+    width: 48px;
+    height: 48px;
     transform: translateY(-3px);
   }
 }
