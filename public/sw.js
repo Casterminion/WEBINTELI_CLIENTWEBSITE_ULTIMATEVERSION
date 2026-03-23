@@ -1,3 +1,8 @@
+// Passthrough fetch — helps Chrome treat the origin as installable when a manifest is present.
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
+});
+
 self.addEventListener("push", (event) => {
   if (!event.data) {
     return;

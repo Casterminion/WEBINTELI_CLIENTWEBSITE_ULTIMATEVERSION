@@ -1,7 +1,7 @@
 /**
  * Bump this when favicons / PWA home-screen icons change so browsers refetch
  * the manifest and icon URLs instead of serving stale cached assets.
- * Also update `public/site.webmanifest` icon `src` query to match (same `v=`).
+ * Also update `public/site.webmanifest` and `public/admin.webmanifest` icon `src` query to match (same `v=`).
  */
 export const PWA_ASSET_VERSION = "2";
 

@@ -368,3 +368,36 @@
   padding-top: 0.25rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
+
+.milestoneFormRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.milestoneInput {
+  width: 5.5rem;
+  min-width: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--admin-text);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.45rem 0.55rem;
+  transition: border-color 0.15s ease;
+}
+
+.milestoneInput:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+}
+
+.milestoneInputLabel {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  flex-shrink: 0;
+}

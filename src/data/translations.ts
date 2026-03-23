@@ -511,7 +511,8 @@ export const translations = {
       cancel: 'Cancel',
       deleting: 'Deleting…',
       installTitle: 'Install Webinteli Admin on your phone',
-      installDescription: 'Add this dashboard to your home screen for one-tap access and faster lead calling.',
+      installDescription:
+        'Installs the admin app (opens /admin after sign-in), not the public website. Add to your home screen for one-tap access.',
       installApp: 'Install app',
       notNow: 'Not now',
       pushTitle: 'Enable background lead alerts',
@@ -546,6 +547,9 @@ export const translations = {
       dashboardMilestonesTitle: 'Milestones',
       dashboardOutreachRecord: 'Best day (record)',
       dashboardOutreachBeatHint: 'Your best single day so far: {n} sends. Try to beat it today.',
+      dashboardEmailOpensBeatHint:
+        'Your best single day for email opens so far: {n}. Try to beat it today.',
+      dashboardEmailOpensInputLabel: 'Opens today (manual)',
       dashboardMilestonesToday: 'Today (manual)',
       dashboardMilestonesThisMonth: 'This month (sum)',
       dashboardMilestonesAllTime: 'All time (sum)',
@@ -1123,7 +1127,8 @@ export const translations = {
       cancel: 'Atšaukti',
       deleting: 'Ištrinama…',
       installTitle: 'Įdiekite Webinteli Admin į savo telefoną',
-      installDescription: 'Pridėkite šį skydelį į pradinį ekraną, kad galėtumėte greitai pasiekti ir skambinti potencialiems klientams.',
+      installDescription:
+        'Įdiegiama administratoriaus programėlė (atidaro /admin po prisijungimo), ne vieša svetainė. Pridėkite prie pradinio ekrano greitam prieigai.',
       installApp: 'Įdiegti programą',
       notNow: 'Dabar ne',
       pushTitle: 'Įjungti fono pranešimus apie potencialius klientus',
@@ -1158,6 +1163,9 @@ export const translations = {
       dashboardMilestonesTitle: 'Etapai',
       dashboardOutreachRecord: 'Geriausia diena (rekordas)',
       dashboardOutreachBeatHint: 'Geriausia viena diena iki šiol: {n} siuntimų. Pabandykite šiandien pagerinti.',
+      dashboardEmailOpensBeatHint:
+        'Geriausia viena diena atidarymų iki šiol: {n}. Pabandykite šiandien pagerinti.',
+      dashboardEmailOpensInputLabel: 'Šiandien atidarė (rankiniu būdu)',
       dashboardMilestonesToday: 'Šiandien (rankiniu būdu)',
       dashboardMilestonesThisMonth: 'Šį mėnesį (suma)',
       dashboardMilestonesAllTime: 'Viso laiko (suma)',

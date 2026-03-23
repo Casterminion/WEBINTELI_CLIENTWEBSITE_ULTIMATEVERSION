@@ -19,6 +19,12 @@ export function AdminLayoutClient({ children }: Props) {
   const searchParams = useSearchParams();
   const [checking, setChecking] = useState(true);
 
+  // Register SW on all /admin pages so Chrome can offer PWA install with admin-scoped manifest.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    void navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
