@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' https://fonts.gstatic.com",
               "connect-src 'self' https://*.supabase.co https://ipapi.co wss://*.supabase.co",
+              "frame-src 'self' https://play.gumlet.io https://*.gumlet.io",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
