@@ -7,7 +7,12 @@ import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { normalizeExternalUrl } from "@/lib/url";
-import { getFollowUpDueDates, todayISODateUtc } from "@/lib/followUpSchedule";
+import {
+  defaultNextFollowUpLocalISODate,
+  pruneFollowUpsAfterManualSchedule,
+  todayISODateUtc,
+  toLocalISODate,
+} from "@/lib/followUpSchedule";
 import {
   ADMIN_SERVICE_OPTIONS,
   DEFAULT_ADMIN_SERVICE,
@@ -82,7 +87,7 @@ export default function MyLeadsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [addLeadSubmitting, setAddLeadSubmitting] = useState(false);
-  const [addLeadForm, setAddLeadForm] = useState({
+  const [addLeadForm, setAddLeadForm] = useState(() => ({
     name: "",
     email: "",
     phone: "",
@@ -90,7 +95,9 @@ export default function MyLeadsPage() {
     service: DEFAULT_ADMIN_SERVICE,
     notes: "",
     website: "",
-  });
+    followUpDueDate: defaultNextFollowUpLocalISODate(),
+    followUpTaskNote: "",
+  }));
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   /** All business names this user ever had on a lead (any status) — for autocomplete & duplicate hints */
@@ -208,11 +215,17 @@ export default function MyLeadsPage() {
   }, [addLeadNameTrimmed, duplicateActiveLead, businessNameSuggestions]);
 
   const handleAddLead = async () => {
-    const { name, email, service } = addLeadForm;
+    const { name, email, service, followUpDueDate } = addLeadForm;
     if (!name.trim()) return;
+    const todayLocal = toLocalISODate(new Date());
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(followUpDueDate) || followUpDueDate < todayLocal) {
+      setError(t.admin?.followUpDateInvalid ?? "Choose today or a future date.");
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setAddLeadSubmitting(true);
+    setError(null);
     const { data: inserted, error: insertErr } = await supabase
       .from("intake_submissions")
       .insert({
@@ -240,16 +253,27 @@ export default function MyLeadsPage() {
       return;
     }
     const leadId = (inserted as { id: string }).id;
-    const dueDates = getFollowUpDueDates();
-    const taskRows = dueDates.map((due_date) => ({
-      lead_id: leadId,
-      assigned_to: user.id,
-      due_date,
-      task_type: "follow_up",
-    }));
-    const { error: taskErr } = await supabase.from("tasks").insert(taskRows);
+    const taskNote = addLeadForm.followUpTaskNote.trim() || null;
+    const { data: newTask, error: taskErr } = await supabase
+      .from("tasks")
+      .insert({
+        lead_id: leadId,
+        assigned_to: user.id,
+        due_date: followUpDueDate,
+        task_type: "follow_up",
+        creation_source: "manual",
+        ...(taskNote ? { notes: taskNote } : {}),
+      })
+      .select("id")
+      .single();
     if (taskErr) {
       setError(taskErr.message);
+      setAddLeadSubmitting(false);
+      return;
+    }
+    const pruneRes = await pruneFollowUpsAfterManualSchedule(supabase, leadId, (newTask as { id: string }).id);
+    if (pruneRes.error) {
+      setError(pruneRes.error.message);
       setAddLeadSubmitting(false);
       return;
     }
@@ -262,6 +286,8 @@ export default function MyLeadsPage() {
       service: DEFAULT_ADMIN_SERVICE,
       notes: "",
       website: "",
+      followUpDueDate: defaultNextFollowUpLocalISODate(),
+      followUpTaskNote: "",
     });
     setAddLeadOpen(false);
     setAddLeadSubmitting(false);
@@ -526,7 +552,7 @@ export default function MyLeadsPage() {
           onClick={() => !addLeadSubmitting && setAddLeadOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-md border p-5"
+            className="w-full max-w-lg rounded-md border p-5 max-h-[90vh] overflow-y-auto"
             style={{
               borderColor: "var(--admin-border)",
               background: "var(--admin-panel)",
@@ -671,6 +697,30 @@ export default function MyLeadsPage() {
                   rows={4}
                   className="admin-input w-full rounded-lg px-3 py-2 text-sm resize-y min-h-[88px]"
                   placeholder={t.admin?.addLeadPitchPlaceholder ?? ""}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                  {t.admin?.followUpPickDate ?? "Follow-up date"}
+                </label>
+                <input
+                  type="date"
+                  value={addLeadForm.followUpDueDate}
+                  min={toLocalISODate(new Date())}
+                  onChange={(e) => setAddLeadForm((p) => ({ ...p, followUpDueDate: e.target.value }))}
+                  className="admin-input w-full rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                  {t.admin?.followUpTaskNoteLabel ?? "Reminder note"}
+                </label>
+                <textarea
+                  value={addLeadForm.followUpTaskNote}
+                  onChange={(e) => setAddLeadForm((p) => ({ ...p, followUpTaskNote: e.target.value }))}
+                  rows={2}
+                  className="admin-input w-full rounded-lg px-3 py-2 text-sm resize-y min-h-[64px]"
+                  placeholder={t.admin?.followUpTaskNotePlaceholder ?? ""}
                 />
               </div>
               {error && <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>}

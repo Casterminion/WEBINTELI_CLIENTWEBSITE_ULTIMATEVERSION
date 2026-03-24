@@ -14,6 +14,7 @@ type TaskRow = {
   task_type: string;
   completed_at: string | null;
   created_at: string;
+  notes: string | null;
   lead_name: string | null;
   lead_email: string | null;
 };
@@ -36,7 +37,7 @@ export default function TasksPage() {
     const load = async () => {
       const { data: tasksData, error: tasksErr } = await supabase
         .from("tasks")
-        .select("id, lead_id, assigned_to, due_date, task_type, completed_at, created_at")
+        .select("id, lead_id, assigned_to, due_date, task_type, completed_at, created_at, notes")
         .order("due_date", { ascending: true });
       if (tasksErr) {
         setError(tasksErr.message);
@@ -247,6 +248,12 @@ export default function TasksPage() {
                       <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.type ?? "Type"}</p>
                       <p className="text-xs capitalize" style={{ color: "var(--admin-text)" }}>{task.task_type.replace("_", " ")}</p>
                     </div>
+                    {task.notes?.trim() ? (
+                      <div className="col-span-2">
+                        <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: "var(--admin-text-muted)" }}>{t.admin?.taskNote ?? "Note"}</p>
+                        <p className="text-xs whitespace-pre-wrap" style={{ color: "var(--admin-text)" }}>{task.notes}</p>
+                      </div>
+                    ) : null}
                   </div>
 
                   {/* Bottom: open lead action */}
@@ -276,6 +283,7 @@ export default function TasksPage() {
                     <th className="px-4 py-2.5">{t.admin?.dueDate ?? "Due date"}</th>
                     <th className="px-4 py-2.5">{t.admin?.lead ?? "Lead"}</th>
                     <th className="px-4 py-2.5">{t.admin?.type ?? "Type"}</th>
+                    <th className="px-4 py-2.5 min-w-[8rem]">{t.admin?.taskNote ?? "Note"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -314,6 +322,13 @@ export default function TasksPage() {
                       </td>
                       <td className="px-4 py-2 capitalize text-sm" style={{ color: "var(--admin-text-muted)" }}>
                         {task.task_type.replace("_", " ")}
+                      </td>
+                      <td className="px-4 py-2 text-sm max-w-xs align-top" style={{ color: "var(--admin-text-muted)" }}>
+                        {task.notes?.trim() ? (
+                          <span className="line-clamp-2 whitespace-pre-wrap" title={task.notes}>{task.notes}</span>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                     </tr>
                   ))}

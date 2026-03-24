@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, AlertCircle, Plus, Phone, Mail, Video, MessageSquare } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, Plus, Phone, Mail, Video, MessageSquare, Calendar } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { InlineEditableField } from "@/components/admin/InlineEditableField";
@@ -11,7 +11,12 @@ import LeadOutreachModal, { type OutreachChannel } from "@/components/admin/Lead
 import EmailHtmlPreview from "@/components/admin/EmailHtmlPreview";
 import { ADMIN_SERVICE_OPTIONS, DEFAULT_ADMIN_SERVICE } from "@/data/adminServiceOptions";
 import { normalizeExternalUrl } from "@/lib/url";
-import { getFollowUpDueDates } from "@/lib/followUpSchedule";
+import {
+  defaultNextFollowUpLocalISODate,
+  deleteStaleOpenFollowUpTasks,
+  pruneFollowUpsAfterManualSchedule,
+  toLocalISODate,
+} from "@/lib/followUpSchedule";
 
 const STATUS_VALUES = [
   { value: "new", key: "statusNew" as const },
@@ -45,6 +50,14 @@ type Lead = {
   website: string | null;
   status_changed_by_email: string | null;
   status_changed_at: string | null;
+};
+
+type LeadFollowUpTaskRow = {
+  id: string;
+  due_date: string;
+  notes: string | null;
+  completed_at: string | null;
+  task_type: string;
 };
 
 type OutreachEventRow = {
@@ -129,6 +142,13 @@ export default function LeadDetailPage() {
   const [loadingOutreach, setLoadingOutreach] = useState(false);
   const [outreachOpen, setOutreachOpen] = useState(false);
   const [outreachChannel, setOutreachChannel] = useState<OutreachChannel>("call");
+  const [claimFollowUpDate, setClaimFollowUpDate] = useState(() => defaultNextFollowUpLocalISODate());
+  const [claimFollowUpNote, setClaimFollowUpNote] = useState("");
+  const [scheduleFollowUpDate, setScheduleFollowUpDate] = useState(() => defaultNextFollowUpLocalISODate());
+  const [scheduleFollowUpNote, setScheduleFollowUpNote] = useState("");
+  const [scheduleFollowUpSubmitting, setScheduleFollowUpSubmitting] = useState(false);
+  const [leadFollowUpTasks, setLeadFollowUpTasks] = useState<LeadFollowUpTaskRow[]>([]);
+  const [loadingLeadTasks, setLoadingLeadTasks] = useState(false);
 
   const serviceSelectOptions = useMemo(() => {
     const base = [...ADMIN_SERVICE_OPTIONS] as string[];
@@ -169,13 +189,42 @@ export default function LeadDetailPage() {
     setLoadingOutreach(false);
   }, [id]);
 
+  const loadLeadFollowUpTasks = useCallback(async () => {
+    if (!id) return;
+    setLoadingLeadTasks(true);
+    await deleteStaleOpenFollowUpTasks(supabase, id);
+    const { data, error: err } = await supabase
+      .from("tasks")
+      .select("id, due_date, notes, completed_at, task_type")
+      .eq("lead_id", id)
+      .eq("task_type", "follow_up")
+      .order("due_date", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (!err && data) setLeadFollowUpTasks(data as LeadFollowUpTaskRow[]);
+    else setLeadFollowUpTasks([]);
+    setLoadingLeadTasks(false);
+  }, [id]);
+
   useEffect(() => {
     void loadLead();
   }, [loadLead]);
 
   useEffect(() => {
+    void loadLeadFollowUpTasks();
+  }, [loadLeadFollowUpTasks]);
+
+  useEffect(() => {
     if (leadTab === "history" && id) void loadOutreach();
   }, [leadTab, id, loadOutreach]);
+
+  const nextUpcomingFollowUp = useMemo(() => {
+    const open = leadFollowUpTasks.filter((t) => !t.completed_at);
+    open.sort((a, b) => {
+      const byDate = a.due_date.localeCompare(b.due_date);
+      return byDate !== 0 ? byDate : a.id.localeCompare(b.id);
+    });
+    return open[0] ?? null;
+  }, [leadFollowUpTasks]);
 
   const outreachLabels = useMemo(
     () => ({
@@ -220,10 +269,16 @@ export default function LeadDetailPage() {
 
   const handleClaim = async () => {
     if (!id) return;
+    const due = claimFollowUpDate.trim();
+    const todayLocal = toLocalISODate(new Date());
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(due) || due < todayLocal) {
+      setError(t.admin?.followUpDateInvalid ?? "Choose today or a future date.");
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setSubmitting(true);
-    const dueDates = getFollowUpDueDates();
+    setError(null);
     const now = new Date().toISOString();
     const { error: updateErr } = await supabase
       .from("intake_submissions")
@@ -240,20 +295,74 @@ export default function LeadDetailPage() {
       setSubmitting(false);
       return;
     }
-    const taskRows = dueDates.map((due_date) => ({
-      lead_id: id,
-      assigned_to: user.id,
-      due_date,
-      task_type: "follow_up",
-    }));
-    const { error: insertErr } = await supabase.from("tasks").insert(taskRows);
+    const notes = claimFollowUpNote.trim() || null;
+    const { data: claimTask, error: insertErr } = await supabase
+      .from("tasks")
+      .insert({
+        lead_id: id,
+        assigned_to: user.id,
+        due_date: due,
+        task_type: "follow_up",
+        creation_source: "manual",
+        ...(notes ? { notes } : {}),
+      })
+      .select("id")
+      .single();
     if (insertErr) {
       setError(insertErr.message);
       setSubmitting(false);
       return;
     }
+    const claimTaskId = (claimTask as { id: string }).id;
+    const { error: pruneClaimErr } = await pruneFollowUpsAfterManualSchedule(supabase, id, claimTaskId);
+    if (pruneClaimErr) {
+      setError(pruneClaimErr.message);
+      setSubmitting(false);
+      return;
+    }
     setSubmitting(false);
     router.push("/admin/my-leads");
+  };
+
+  const handleScheduleFollowUp = async () => {
+    if (!id || !lead?.assigned_to || lead.status === "lost") return;
+    const due = scheduleFollowUpDate.trim();
+    const todayLocal = toLocalISODate(new Date());
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(due) || due < todayLocal) {
+      setError(t.admin?.followUpDateInvalid ?? "Choose today or a future date.");
+      return;
+    }
+    setScheduleFollowUpSubmitting(true);
+    setError(null);
+    const notes = scheduleFollowUpNote.trim() || null;
+    const { data: insertedTask, error: insertErr } = await supabase
+      .from("tasks")
+      .insert({
+        lead_id: id,
+        assigned_to: lead.assigned_to,
+        due_date: due,
+        task_type: "follow_up",
+        creation_source: "manual",
+        ...(notes ? { notes } : {}),
+      })
+      .select("id")
+      .single();
+    if (insertErr) {
+      setScheduleFollowUpSubmitting(false);
+      setError(insertErr.message);
+      return;
+    }
+    const newTaskId = (insertedTask as { id: string }).id;
+    const { error: pruneErr } = await pruneFollowUpsAfterManualSchedule(supabase, id, newTaskId);
+    setScheduleFollowUpSubmitting(false);
+    if (pruneErr) {
+      setError(pruneErr.message);
+      await loadLeadFollowUpTasks();
+      return;
+    }
+    setScheduleFollowUpNote("");
+    setScheduleFollowUpDate(defaultNextFollowUpLocalISODate());
+    await loadLeadFollowUpTasks();
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -284,8 +393,20 @@ export default function LeadDetailPage() {
     }
 
     const { error: err } = await supabase.from("intake_submissions").update(payload).eq("id", id);
-    if (err) setError(err.message);
-    else await loadLead();
+    if (err) {
+      setError(err.message);
+    } else {
+      if (newStatus === "lost") {
+        const { error: delErr } = await supabase
+          .from("tasks")
+          .delete()
+          .eq("lead_id", id)
+          .eq("task_type", "follow_up");
+        if (delErr) setError(delErr.message);
+      }
+      await loadLead();
+      await loadLeadFollowUpTasks();
+    }
     setUpdatingStatus(false);
   };
 
@@ -329,6 +450,26 @@ export default function LeadDetailPage() {
       hour: "2-digit",
       minute: "2-digit",
     }).format(d);
+  };
+
+  const formatTaskDueDate = (isoDate: string) => {
+    const parts = isoDate.split("-").map(Number);
+    if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return isoDate;
+    const [y, m, d] = parts;
+    const dt = new Date(y, m - 1, d);
+    return new Intl.DateTimeFormat("lt-LT", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(dt);
+  };
+
+  const toggleLeadFollowUpTask = async (taskId: string, completed: boolean) => {
+    const { error } = await supabase
+      .from("tasks")
+      .update({ completed_at: completed ? new Date().toISOString() : null })
+      .eq("id", taskId);
+    if (!error) await loadLeadFollowUpTasks();
   };
 
   if (!id) {
@@ -401,36 +542,95 @@ export default function LeadDetailPage() {
           </div>
 
           <div
-            className="flex gap-1 mb-6 border-b"
+            className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between mb-6 border-b"
             style={{ borderColor: "var(--admin-border)" }}
-            role="tablist"
           >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={leadTab === "info"}
-              className="px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
-              style={{
-                borderColor: leadTab === "info" ? "var(--admin-accent)" : "transparent",
-                color: leadTab === "info" ? "var(--admin-text)" : "var(--admin-text-muted)",
-              }}
-              onClick={() => setLeadTab("info")}
-            >
-              {t.admin?.leadTabInformation ?? "Information"}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={leadTab === "history"}
-              className="px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
-              style={{
-                borderColor: leadTab === "history" ? "var(--admin-accent)" : "transparent",
-                color: leadTab === "history" ? "var(--admin-text)" : "var(--admin-text-muted)",
-              }}
-              onClick={() => setLeadTab("history")}
-            >
-              {t.admin?.leadTabHistory ?? "History"}
-            </button>
+            <div className="flex gap-1" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={leadTab === "info"}
+                className="px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
+                style={{
+                  borderColor: leadTab === "info" ? "var(--admin-accent)" : "transparent",
+                  color: leadTab === "info" ? "var(--admin-text)" : "var(--admin-text-muted)",
+                }}
+                onClick={() => setLeadTab("info")}
+              >
+                {t.admin?.leadTabInformation ?? "Information"}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={leadTab === "history"}
+                className="px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors"
+                style={{
+                  borderColor: leadTab === "history" ? "var(--admin-accent)" : "transparent",
+                  color: leadTab === "history" ? "var(--admin-text)" : "var(--admin-text-muted)",
+                }}
+                onClick={() => setLeadTab("history")}
+              >
+                {t.admin?.leadTabHistory ?? "History"}
+              </button>
+            </div>
+            {!isUnclaimed && lead?.status !== "lost" ? (
+              <div
+                className="flex items-start gap-2 sm:justify-end pb-2 sm:pb-2 sm:max-w-[min(100%,22rem)] min-w-0 self-stretch sm:self-auto rounded-lg border px-3 py-2 sm:ml-auto"
+                style={{
+                  borderColor: "var(--admin-border)",
+                  background: "var(--admin-bg)",
+                }}
+              >
+                <Calendar className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "var(--admin-accent)" }} aria-hidden />
+                <div className="min-w-0 flex-1 text-left sm:text-right">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
+                    {t.admin?.leadNextFollowUpRibbon ?? "Next follow-up"}
+                  </p>
+                  {loadingLeadTasks ? (
+                    <div className="mt-1 flex items-center justify-start sm:justify-end gap-2 text-xs" style={{ color: "var(--admin-text-muted)" }}>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                    </div>
+                  ) : nextUpcomingFollowUp ? (
+                    <div className="mt-0.5 flex flex-col sm:items-end gap-1">
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => void toggleLeadFollowUpTask(nextUpcomingFollowUp.id, true)}
+                          className="shrink-0 flex h-5 w-5 items-center justify-center rounded border transition-colors hover:opacity-80"
+                          style={{
+                            borderColor: "var(--admin-border)",
+                            color: "var(--admin-text-muted)",
+                          }}
+                          aria-label={t.admin?.taskMarkComplete ?? "Mark as done"}
+                        >
+                          <span className="sr-only">{t.admin?.taskMarkComplete ?? "Mark as done"}</span>
+                        </button>
+                        <time
+                          className="text-sm font-semibold tabular-nums"
+                          style={{ color: "var(--admin-text)" }}
+                          dateTime={nextUpcomingFollowUp.due_date}
+                        >
+                          {formatTaskDueDate(nextUpcomingFollowUp.due_date)}
+                        </time>
+                      </div>
+                      {nextUpcomingFollowUp.notes?.trim() ? (
+                        <p
+                          className="text-xs leading-snug line-clamp-2 sm:text-right w-full"
+                          style={{ color: "var(--admin-text-muted)" }}
+                          title={nextUpcomingFollowUp.notes.trim()}
+                        >
+                          {nextUpcomingFollowUp.notes.trim()}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="mt-0.5 text-xs" style={{ color: "var(--admin-text-muted)" }}>
+                      {t.admin?.leadNextFollowUpNone ?? "No upcoming follow-up"}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {leadTab === "history" ? (
@@ -658,6 +858,28 @@ export default function LeadDetailPage() {
             <p className="text-sm font-medium" style={{ color: "var(--admin-text)" }}>
               {t.admin?.claimPrompt ?? "Claim this lead to assign it to yourself and set status to Contacted."}
             </p>
+            <div className="space-y-2 max-w-lg">
+              <label className="block text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
+                {t.admin?.followUpPickDate ?? "Follow-up date"}
+              </label>
+              <input
+                type="date"
+                value={claimFollowUpDate}
+                min={toLocalISODate(new Date())}
+                onChange={(e) => setClaimFollowUpDate(e.target.value)}
+                className="admin-input rounded-lg px-3 py-2 text-sm w-full max-w-xs"
+              />
+              <label className="block text-xs font-medium uppercase tracking-wider pt-1" style={{ color: "var(--admin-text-muted)" }}>
+                {t.admin?.followUpTaskNoteLabel ?? "Reminder note"}
+              </label>
+              <textarea
+                value={claimFollowUpNote}
+                onChange={(e) => setClaimFollowUpNote(e.target.value)}
+                rows={2}
+                className="admin-input w-full rounded-lg px-3 py-2 text-sm resize-y min-h-[64px]"
+                placeholder={t.admin?.followUpTaskNotePlaceholder ?? ""}
+              />
+            </div>
             {error && (
               <p className="text-sm" style={{ color: "var(--admin-accent)" }}>{error}</p>
             )}
@@ -725,6 +947,46 @@ export default function LeadDetailPage() {
               )}
             </div>
 
+            {lead?.status !== "lost" ? (
+            <>
+            <div className="flex flex-col gap-2 max-w-xl">
+              <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--admin-text-muted)" }}>
+                {t.admin?.followUpPickDate ?? "Follow-up date"}
+              </label>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-end">
+                <input
+                  type="date"
+                  value={scheduleFollowUpDate}
+                  min={toLocalISODate(new Date())}
+                  onChange={(e) => setScheduleFollowUpDate(e.target.value)}
+                  className="admin-input rounded-lg px-3 py-2 text-sm w-full sm:w-auto sm:min-w-[11rem]"
+                />
+                <textarea
+                  value={scheduleFollowUpNote}
+                  onChange={(e) => setScheduleFollowUpNote(e.target.value)}
+                  rows={2}
+                  className="admin-input flex-1 min-w-0 rounded-lg px-3 py-2 text-sm resize-y min-h-[44px] sm:min-w-[200px]"
+                  placeholder={t.admin?.followUpTaskNotePlaceholder ?? ""}
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleScheduleFollowUp()}
+                  disabled={scheduleFollowUpSubmitting}
+                  className="rounded-lg px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-50 shrink-0"
+                  style={{
+                    background: "var(--admin-accent)",
+                    color: "var(--admin-bg)",
+                  }}
+                >
+                  {scheduleFollowUpSubmitting
+                    ? (t.admin?.schedulingFollowUp ?? "Adding…")
+                    : (t.admin?.scheduleFollowUp ?? "Add follow-up task")}
+                </button>
+              </div>
+            </div>
+            </>
+            ) : null}
+
             <div
               className="mt-4 pt-4 flex flex-col gap-2"
               style={{ borderTop: "1px solid var(--admin-border)" }}
@@ -784,6 +1046,7 @@ export default function LeadDetailPage() {
           onSuccess={async () => {
             await loadLead();
             await loadOutreach();
+            await loadLeadFollowUpTasks();
           }}
           labels={outreachLabels}
         />

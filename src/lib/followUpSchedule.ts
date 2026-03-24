@@ -1,5 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/** Local calendar YYYY-MM-DD (for `<input type="date">`). */
+export function toLocalISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Default next-day follow-up date in local calendar. */
+export function defaultNextFollowUpLocalISODate(): string {
+  const t = new Date();
+  t.setDate(t.getDate() + 1);
+  return toLocalISODate(t);
+}
+
 /** Same sequence as legacy claim / add-lead: next 7 days then +10..+28 offsets from local midnight “today”. */
 export function getFollowUpDueDates(): string[] {
   const dates: string[] = [];
@@ -33,6 +48,54 @@ function addDaysToISODate(iso: string, days: number): string {
   return `${yy}-${mm}-${dd}`;
 }
 
+/** Open follow-ups whose due date is before today (UTC) — incomplete stale reminders. */
+export async function deleteStaleOpenFollowUpTasks(
+  supabase: SupabaseClient,
+  leadId: string
+): Promise<{ error: Error | null }> {
+  const today = todayISODateUtc();
+  const { error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("lead_id", leadId)
+    .eq("task_type", "follow_up")
+    .is("completed_at", null)
+    .lt("due_date", today);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+/**
+ * After saving a manual follow-up: drop all auto follow-ups for this lead, and any other open manual ones.
+ * Keeps `keepTaskId` plus completed manual rows (history).
+ */
+export async function pruneFollowUpsAfterManualSchedule(
+  supabase: SupabaseClient,
+  leadId: string,
+  keepTaskId: string
+): Promise<{ error: Error | null }> {
+  const { error: e1 } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("lead_id", leadId)
+    .eq("task_type", "follow_up")
+    .neq("id", keepTaskId)
+    .eq("creation_source", "auto");
+
+  if (e1) return { error: new Error(e1.message) };
+
+  const { error: e2 } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("lead_id", leadId)
+    .eq("task_type", "follow_up")
+    .neq("id", keepTaskId)
+    .eq("creation_source", "manual")
+    .is("completed_at", null);
+
+  return { error: e2 ? new Error(e2.message) : null };
+}
+
 /** Mark all tasks for this lead due today as completed. */
 export async function completeTodayTasksForLead(
   supabase: SupabaseClient,
@@ -64,17 +127,29 @@ export async function ensureNextOpenFollowUpTask(
   leadId: string,
   assignedToUserId: string
 ): Promise<{ error: Error | null }> {
+  const { data: leadRow, error: leadErr } = await supabase
+    .from("intake_submissions")
+    .select("status")
+    .eq("id", leadId)
+    .maybeSingle();
+  if (leadErr) return { error: new Error(leadErr.message) };
+  if (leadRow?.status === "lost") return { error: null };
+
+  const stale = await deleteStaleOpenFollowUpTasks(supabase, leadId);
+  if (stale.error) return stale;
+
   const today = todayISODateUtc();
 
-  const { data: openFuture, error: e1 } = await supabase
+  const { data: openDueTodayOrFuture, error: e1 } = await supabase
     .from("tasks")
     .select("id")
     .eq("lead_id", leadId)
+    .eq("task_type", "follow_up")
     .is("completed_at", null)
-    .gt("due_date", today)
+    .gte("due_date", today)
     .limit(1);
   if (e1) return { error: new Error(e1.message) };
-  if (openFuture?.length) return { error: null };
+  if (openDueTodayOrFuture?.length) return { error: null };
 
   const { data: existing, error: e2 } = await supabase.from("tasks").select("due_date").eq("lead_id", leadId);
   if (e2) return { error: new Error(e2.message) };
@@ -102,6 +177,7 @@ export async function ensureNextOpenFollowUpTask(
     assigned_to: assignedToUserId,
     due_date: picked,
     task_type: "follow_up",
+    creation_source: "auto",
   });
   if (e3) return { error: new Error(e3.message) };
   return { error: null };
