@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { Inbox, Landmark, LayoutDashboard, LogOut, UserCheck, ListTodo, Menu, X } from "lucide-react";
+import { FileText, Inbox, Landmark, LayoutDashboard, LogOut, UserCheck, ListTodo, Menu, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AdminInstallPrompt from "./AdminInstallPrompt";
@@ -22,6 +22,7 @@ const ADMIN_HOME_HREF = "/admin/client-requests";
 const navHrefs = [
   { href: "/admin/dashboard", key: "dashboard" as const, icon: LayoutDashboard },
   { href: "/admin/financai", key: "financai" as const, icon: Landmark },
+  { href: "/admin/buhalterija/saskaitos", key: "buhalterija" as const, icon: FileText },
   { href: "/admin/client-requests", key: "clientRequests" as const, icon: Inbox },
   { href: "/admin/my-leads", key: "myLeads" as const, icon: UserCheck },
   { href: "/admin/tasks", key: "tasks" as const, icon: ListTodo },

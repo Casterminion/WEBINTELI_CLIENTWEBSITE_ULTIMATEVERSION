@@ -2,6 +2,10 @@
 
 # dependencies
 /node_modules
+/backend/node_modules
+
+# backend build output (Coolify builds from source)
+/backend/dist
 /.pnp
 .pnp.*
 .yarn/*
