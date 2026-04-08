@@ -1,4 +1,5 @@
-# Used only when building the PDF worker: docker build -f backend/Dockerfile .
+# Used when building with repo root as context (optional). Worker build uses backend/.dockerignore:
+#   docker build -f backend/Dockerfile ./backend
 # Does not affect Netlify (Next.js build does not use this file).
 
 .git
