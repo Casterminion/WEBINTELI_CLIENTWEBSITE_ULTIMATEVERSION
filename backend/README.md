@@ -81,6 +81,22 @@ Redeploy the site after saving.
 - If **`PDF_WORKER_URL` and `PDF_WORKER_SECRET` are set**, Next.js [`/api/admin/invoices/pdf`](../../src/app/api/admin/invoices/pdf/route.ts) calls your worker for the PDF bytes, then uploads to Supabase as before.
 - If they are **unset**, PDF is rendered **inside** the Next.js API route (local dev / fallback).
 
+## Verify Netlify + tunnel (E2E)
+
+1. **Tunnel → worker:** From the repo root, with your public base URL and the same secret as `WORKER_SECRET` on the worker:
+   ```bash
+   export PDF_WORKER_VERIFY_URL='https://your-tunnel.trycloudflare.com'
+   export PDF_WORKER_VERIFY_SECRET='your-secret'
+   npm run verify:pdf-worker-tunnel
+   ```
+   Expect `ok` from `/health` and `%PDF` magic bytes from `/render-pdf`.
+
+2. **Netlify env:** Set `PDF_WORKER_URL` (no trailing slash) and `PDF_WORKER_SECRET` (must match Coolify `WORKER_SECRET`), then redeploy.
+
+3. **Prove the worker path is used:** Temporarily set `PDF_WORKER_URL` to an invalid host, redeploy, trigger PDF from the admin UI → expect **502** and JSON `error: "worker_error"`. Restore the real URL and redeploy.
+
+4. **Admin UI:** **Buhalterija → Saskaitos →** new invoice ([`/admin/buhalterija/saskaitos/nauja`](../../src/app/admin/buhalterija/saskaitos/nauja/page.tsx)) or edit existing ([`/admin/buhalterija/saskaitos/[id]/redaguoti`](../../src/app/admin/buhalterija/saskaitos/[id]/redaguoti/page.tsx)) → use the PDF generate action. Success: **200** on `POST /api/admin/invoices/pdf`, PDF download, optional `pdf_storage_path` on the row and download from the list page.
+
 ## Phase 2 (optional)
 
 - Move ZIP export to this service to reduce Netlify work further.
