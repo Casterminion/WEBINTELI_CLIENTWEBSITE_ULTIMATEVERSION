@@ -41,23 +41,21 @@ curl -sS http://127.0.0.1:3001/health
 
 ## Docker
 
-**Always** use repository **root** as build context (so Next.js frontend files stay untouched; this only builds the worker):
+Build context must be the **`backend/`** folder (not the monorepo root):
 
 ```bash
-docker build -f backend/Dockerfile -t invoice-pdf-worker .
+docker build -f backend/Dockerfile ./backend
 docker run --rm -e WORKER_SECRET=test -p 3001:3001 invoice-pdf-worker
 ```
 
-There is **no** `Dockerfile` at repo root on purpose — Netlify stays on `package.json` / Next; only Coolify (or you manually) uses `backend/Dockerfile`.
+Netlify does not use this Dockerfile.
 
 ## Coolify (step-by-step)
 
-1. Push this repo to GitHub (include full monorepo: **`backend/`** etc.).
-2. In Coolify: **New resource** → deploy with **Dockerfile**.
-3. **Recommended:**
-   - **Base directory:** leave **empty** (repository root). Do **not** set only `backend` unless you know Coolify resolves paths correctly.
-   - **Dockerfile location:** `backend/Dockerfile` (if the UI adds `/`, `/backend/Dockerfile` is OK as long as it is relative to the cloned repo).
-4. This matches `docker build -f backend/Dockerfile .` locally.
+1. Push this repo to GitHub (include **`backend/`** with `package-lock.json`).
+2. **Base directory:** `backend` (or `/backend` if the UI adds a slash).
+3. **Dockerfile location:** `Dockerfile` (file inside `backend/`; UI may show `/Dockerfile`).
+4. This is equivalent to `docker build -f backend/Dockerfile ./backend`.
 5. **Ports:** map container **3001** → what Coolify expects (often 3001).
 6. **Environment variables:**
    - `WORKER_SECRET` = a long random string (save it in a password manager).
