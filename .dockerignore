@@ -1,0 +1,11 @@
+# Used only when building the PDF worker: docker build -f backend/Dockerfile .
+# Does not affect Netlify (Next.js build does not use this file).
+
+.git
+.next
+node_modules
+backend/node_modules
+backend/dist
+coverage
+.env
+.env.*
