@@ -31,9 +31,10 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
-              "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://*.supabase.co https://ipapi.co wss://*.supabase.co",
-              "frame-src 'self' https://play.gumlet.io https://*.gumlet.io",
+              "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
+              "connect-src 'self' https://*.supabase.co https://ipapi.co https://cdn.jsdelivr.net wss://*.supabase.co",
+              // PDFViewer (react-pdf) embeds the generated PDF via blob: iframe; invoice preview fonts load from jsDelivr.
+              "frame-src 'self' blob: https://play.gumlet.io https://*.gumlet.io",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

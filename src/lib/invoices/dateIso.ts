@@ -1,3 +1,8 @@
+/** Šiandienos data YYYY-MM-DD pagal Vilniaus laiko juostą (terminams / statusui). */
+export function todayISOInVilnius(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Vilnius" });
+}
+
 /** Add calendar days to a YYYY-MM-DD string (local date). */
 export function addDaysToISODate(isoYmd: string, days: number): string {
   const parts = isoYmd.split("-").map((p) => parseInt(p, 10));

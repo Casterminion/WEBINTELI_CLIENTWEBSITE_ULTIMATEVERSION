@@ -39,7 +39,8 @@ curl -sS -f -D - -o "$OUT" \
     "seller_name": "Seller UAB",
     "seller_code": "123456789",
     "seller_address": "Test g. 1, Vilnius",
-    "seller_contact_line": "seller@example.com",
+    "seller_email": "seller@example.com",
+    "seller_phone": "+370 600 00000",
     "seller_bank_account": "LT00 0000 0000 0000 0000",
     "buyer_name": "Buyer UAB",
     "line_items": [

@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AdminInstallPrompt from "./AdminInstallPrompt";
 import AdminReleaseBanner from "./AdminReleaseBanner";
+import PaymentReminderBanner from "./PaymentReminderBanner";
 import PushOptInBanner from "./PushOptInBanner";
 
 type Props = {
@@ -22,7 +23,7 @@ const ADMIN_HOME_HREF = "/admin/client-requests";
 const navHrefs = [
   { href: "/admin/dashboard", key: "dashboard" as const, icon: LayoutDashboard },
   { href: "/admin/financai", key: "financai" as const, icon: Landmark },
-  { href: "/admin/buhalterija/saskaitos", key: "buhalterija" as const, icon: FileText },
+  { href: "/admin/buhalterija", key: "buhalterija" as const, icon: FileText },
   { href: "/admin/client-requests", key: "clientRequests" as const, icon: Inbox },
   { href: "/admin/my-leads", key: "myLeads" as const, icon: UserCheck },
   { href: "/admin/tasks", key: "tasks" as const, icon: ListTodo },
@@ -46,6 +47,11 @@ export default function AdminShell({ children }: Props) {
     label: t.admin?.[key] ?? key,
     icon,
   }));
+
+  const buhalterijaDenseMain =
+    pathname === "/admin/buhalterija" ||
+    pathname.startsWith("/admin/buhalterija/saskaitos") ||
+    pathname.startsWith("/admin/buhalterija/nustatymai");
 
   useEffect(() => {
     const loadUser = async () => {
@@ -272,13 +278,19 @@ export default function AdminShell({ children }: Props) {
       <main className="flex-1 min-w-0">
         <div
           className={[
-            "max-w-6xl mx-auto px-4 md:px-6",
-            pathname === "/admin/dashboard" ? "py-3 md:py-4" : "py-4 md:py-6",
+            "mx-auto px-4 md:px-6",
+            buhalterijaDenseMain ? "max-w-7xl" : "max-w-6xl",
+            buhalterijaDenseMain
+              ? "py-2 md:py-3"
+              : pathname === "/admin/dashboard"
+                ? "py-3 md:py-4"
+                : "py-4 md:py-6",
           ].join(" ")}
         >
           <AdminReleaseBanner />
           <AdminInstallPrompt />
           <PushOptInBanner />
+          <PaymentReminderBanner />
           {children}
         </div>
       </main>

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import BuhalterijaDashboardView from "@/components/admin/buhalterija/BuhalterijaDashboardView";
 
 export default function BuhalterijaIndexPage() {
-  redirect("/admin/buhalterija/saskaitos");
+  return <BuhalterijaDashboardView />;
 }

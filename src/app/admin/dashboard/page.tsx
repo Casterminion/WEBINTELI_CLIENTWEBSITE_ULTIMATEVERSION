@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { localTodayISO } from "@/lib/adminFormat";
 import styles from "./DashboardPage.module.css";
+import { VatMonitorCard } from "./VatMonitorCard";
 
 /** Local calendar YYYY-MM-DD from an ISO timestamp */
 function toLocalDateISO(iso: string): string {
@@ -315,6 +316,8 @@ export default function AdminDashboardPage() {
           </p>
         </div>
       </section>
+
+      <VatMonitorCard />
     </div>
   );
 }

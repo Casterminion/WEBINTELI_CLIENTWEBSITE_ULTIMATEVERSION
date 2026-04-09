@@ -1,161 +1,274 @@
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Image, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { getPdfTitle } from "./documentTypes";
+import { parseTaxProfileType } from "./invoiceStatus";
+import { resolveInvoiceLogoPathForPdf } from "./invoiceLogoPath";
+import { formatSellerContactLine } from "./sellerContact";
+import { serviceTimingPdfMeta } from "./serviceTiming";
+import { normalizeBuyerCountry } from "./buyerIdentification";
 import type { InvoicePayload } from "./types";
 import { computeInvoiceSubtotal } from "./types";
 
+const ACCENT = "#ff9800";
+const INK = "#0b1120";
+const INK_MUTED = "#475569";
+const BORDER = "#e2e8f0";
+const SURFACE = "#f1f5f9";
+
 const styles = StyleSheet.create({
   page: {
-    padding: 36,
+    paddingTop: 32,
+    paddingHorizontal: 40,
+    paddingBottom: 72,
     fontFamily: "NotoSans",
     fontSize: 9,
-    color: "#111",
+    color: INK,
   },
-  sellerHeader: {
-    marginBottom: 16,
+  topAccent: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: ACCENT,
   },
-  sellerName: {
-    fontSize: 11,
-    fontWeight: 700,
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 4,
   },
-  sellerContact: {
-    fontSize: 9,
-    color: "#333",
-  },
-  centerBlock: {
+  brandBlock: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 14,
+    maxWidth: "58%",
+  },
+  logo: {
+    height: 44,
+    width: 132,
+    objectFit: "contain",
+    objectPosition: "left",
+  },
+  wordmark: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: INK,
+    letterSpacing: -0.3,
+  },
+  headerContactCol: {
+    alignItems: "flex-end",
+    maxWidth: "42%",
+  },
+  headerContactLabel: {
+    fontSize: 6.5,
+    fontWeight: 700,
+    color: INK_MUTED,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  headerContactLine: {
+    fontSize: 8.5,
+    color: INK,
+    marginBottom: 2,
+    textAlign: "right",
+  },
+  titleBand: {
+    flexDirection: "row",
+    marginTop: 18,
+    marginBottom: 4,
+  },
+  titleAccentBar: {
+    width: 4,
+    backgroundColor: ACCENT,
+    marginRight: 12,
+  },
+  titleTextCol: {
+    flex: 1,
   },
   invoiceNumber: {
     fontSize: 22,
     fontWeight: 700,
-    letterSpacing: 1,
-    marginBottom: 6,
+    letterSpacing: 0.5,
+    color: INK,
+    marginBottom: 4,
   },
   documentTitle: {
-    fontSize: 11,
+    fontSize: 9.5,
     fontWeight: 700,
-    textAlign: "center",
+    color: INK_MUTED,
+    letterSpacing: 1.2,
   },
   metaRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    paddingBottom: 10,
+    marginTop: 16,
+    gap: 8,
   },
-  metaCol: {
+  metaCard: {
     flex: 1,
-    paddingRight: 8,
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
   },
   metaLabel: {
-    fontSize: 7,
+    fontSize: 6.5,
     fontWeight: 700,
-    marginBottom: 3,
-    letterSpacing: 0.5,
+    color: INK_MUTED,
+    letterSpacing: 0.8,
+    marginBottom: 5,
   },
   metaValue: {
-    fontSize: 9,
+    fontSize: 9.5,
+    fontWeight: 700,
+    color: INK,
   },
   partiesRow: {
     flexDirection: "row",
-    marginBottom: 14,
+    marginTop: 18,
+    gap: 14,
   },
-  partyCol: {
+  partyCard: {
     flex: 1,
-    paddingRight: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    padding: 12,
+    minHeight: 118,
+  },
+  partyTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  partyTitleAccent: {
+    width: 3,
+    height: 12,
+    backgroundColor: ACCENT,
+    marginRight: 8,
   },
   partyTitle: {
     fontSize: 7,
     fontWeight: 700,
-    marginBottom: 6,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    color: INK,
   },
   partyLine: {
     fontSize: 9,
     marginBottom: 3,
+    color: INK,
+    lineHeight: 1.35,
   },
   partyBold: {
     fontWeight: 700,
-    marginBottom: 4,
+    marginBottom: 5,
+    fontSize: 10,
   },
-  tableHeader: {
+  tableHeaderWrap: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#000",
-    paddingBottom: 4,
-    marginBottom: 4,
+    backgroundColor: INK,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginTop: 16,
   },
-  thNr: { width: "6%", fontSize: 7, fontWeight: 700 },
-  thDesc: { width: "46%", fontSize: 7, fontWeight: 700 },
-  thQty: { width: "12%", fontSize: 7, fontWeight: 700, textAlign: "right" },
-  thPrice: { width: "18%", fontSize: 7, fontWeight: 700, textAlign: "right" },
-  thSum: { width: "18%", fontSize: 7, fontWeight: 700, textAlign: "right" },
+  thNr: { width: "6%", fontSize: 7, fontWeight: 700, color: "#fff" },
+  thDesc: { width: "46%", fontSize: 7, fontWeight: 700, color: "#fff" },
+  thQty: { width: "12%", fontSize: 7, fontWeight: 700, color: "#fff", textAlign: "right" },
+  thPrice: { width: "18%", fontSize: 7, fontWeight: 700, color: "#fff", textAlign: "right" },
+  thSum: { width: "18%", fontSize: 7, fontWeight: 700, color: "#fff", textAlign: "right" },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 5,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#ddd",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
   },
-  tdNr: { width: "6%", fontSize: 9 },
-  tdDesc: { width: "46%", fontSize: 9, paddingRight: 6 },
-  tdQty: { width: "12%", fontSize: 9, textAlign: "right" },
-  tdPrice: { width: "18%", fontSize: 9, textAlign: "right" },
-  tdSum: { width: "18%", fontSize: 9, textAlign: "right" },
-  totals: {
-    marginTop: 10,
+  tdNr: { width: "6%", fontSize: 9, color: INK_MUTED },
+  tdDesc: { width: "46%", fontSize: 9, paddingRight: 6, color: INK },
+  tdQty: { width: "12%", fontSize: 9, textAlign: "right", color: INK },
+  tdPrice: { width: "18%", fontSize: 9, textAlign: "right", color: INK },
+  tdSum: { width: "18%", fontSize: 9, textAlign: "right", fontWeight: 700, color: INK },
+  totalsWrap: {
+    marginTop: 14,
     alignItems: "flex-end",
+  },
+  totalsInner: {
+    width: "48%",
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#fafafa",
   },
   totalLine: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    marginBottom: 3,
-    width: "100%",
+    justifyContent: "space-between",
+    marginBottom: 4,
   },
   totalLabel: {
-    width: "35%",
-    textAlign: "right",
-    paddingRight: 8,
     fontSize: 9,
+    color: INK_MUTED,
   },
   totalValue: {
-    width: "22%",
-    textAlign: "right",
     fontSize: 9,
     fontWeight: 700,
+    color: INK,
+  },
+  taxNote: {
+    marginTop: 6,
+    fontSize: 8,
+    color: INK_MUTED,
+    textAlign: "right",
+    lineHeight: 1.4,
   },
   grandTotal: {
-    marginTop: 4,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: "#000",
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 2,
+    borderTopColor: ACCENT,
+  },
+  grandTotalLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: INK,
+  },
+  grandTotalValue: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: INK,
   },
   notesSection: {
-    marginTop: 16,
+    marginTop: 18,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: BORDER,
+    backgroundColor: SURFACE,
   },
   notesTitle: {
     fontSize: 7,
     fontWeight: 700,
-    marginBottom: 4,
-    letterSpacing: 0.5,
+    marginBottom: 6,
+    letterSpacing: 1,
+    color: INK_MUTED,
   },
   notesBody: {
-    fontSize: 8,
-    lineHeight: 1.4,
-    color: "#222",
+    fontSize: 8.5,
+    lineHeight: 1.45,
+    color: INK,
   },
   footer: {
     position: "absolute",
     bottom: 28,
-    left: 36,
-    right: 36,
-    borderTopWidth: 0.5,
-    borderTopColor: "#aaa",
-    paddingTop: 8,
+    left: 40,
+    right: 40,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+    paddingTop: 10,
     fontSize: 7,
-    color: "#444",
+    color: INK_MUTED,
     textAlign: "center",
-    lineHeight: 1.35,
+    lineHeight: 1.45,
   },
 });
 
@@ -172,53 +285,106 @@ function formatMoney(amount: number, currency: string): string {
   }
 }
 
+function showVatBreakdown(data: InvoicePayload): boolean {
+  if (data.document_type === "vat_invoice") return true;
+  return parseTaxProfileType(data.tax_profile_snapshot) !== "non_vat";
+}
+
+function buyerIdentificationPdfLines(data: InvoicePayload): string[] {
+  const lines: string[] = [];
+  if (data.buyer_type === "company") {
+    const c = normalizeBuyerCountry(data.buyer_country);
+    const comp = data.buyer_company_code?.trim();
+    const reg = data.buyer_registration_number?.trim();
+    const vat = data.buyer_vat_number?.trim();
+    if (c === "LT" && comp) lines.push(`Įmonės kodas: ${comp}`);
+    if (c !== "LT" && reg) lines.push(`Registracijos Nr.: ${reg}`);
+    if (vat) lines.push(`PVM mokėtojo kodas: ${vat}`);
+  }
+  const leg = data.buyer_code?.trim();
+  if (lines.length === 0 && leg) lines.push(`Įmonės kodas: ${leg}`);
+  return lines;
+}
+
 export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
+  const logoPath = resolveInvoiceLogoPathForPdf();
   const subtotal = computeInvoiceSubtotal(data.line_items);
-  const buyerCodeLine = data.buyer_code?.trim()
-    ? `Įmonės kodas: ${data.buyer_code.trim()}`
-    : null;
+  const buyerIdLines = buyerIdentificationPdfLines(data);
+  const pdfTitle = getPdfTitle(data.document_type);
+  const vatMode = showVatBreakdown(data);
+  const serviceMeta = serviceTimingPdfMeta(data);
+  const sellerEmail = data.seller_email?.trim() || "";
+  const sellerPhone = data.seller_phone?.trim() || "";
+  const sellerFooterContact =
+    formatSellerContactLine(sellerEmail, sellerPhone) || data.seller_contact_line?.trim() || "";
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.sellerHeader}>
-          <Text style={styles.sellerName}>{data.seller_name}</Text>
-          <Text style={styles.sellerContact}>{data.seller_contact_line}</Text>
+        <View style={styles.topAccent} fixed />
+
+        <View style={styles.headerRow}>
+          <View style={styles.brandBlock}>
+            {logoPath ? (
+              <Image src={logoPath} style={styles.logo} />
+            ) : (
+              <Text style={styles.wordmark}>{data.seller_name}</Text>
+            )}
+          </View>
+          <View style={styles.headerContactCol}>
+            <Text style={styles.headerContactLabel}>KONTAKTAI</Text>
+            <Text style={styles.headerContactLine}>{sellerEmail || "—"}</Text>
+            <Text style={styles.headerContactLine}>{sellerPhone || "—"}</Text>
+          </View>
         </View>
 
-        <View style={styles.centerBlock}>
-          <Text style={styles.invoiceNumber}>{data.invoice_number}</Text>
-          <Text style={styles.documentTitle}>{data.document_title}</Text>
+        <View style={styles.titleBand}>
+          <View style={styles.titleAccentBar} />
+          <View style={styles.titleTextCol}>
+            <Text style={styles.invoiceNumber}>{data.invoice_number}</Text>
+            <Text style={styles.documentTitle}>{pdfTitle}</Text>
+          </View>
         </View>
 
         <View style={styles.metaRow}>
-          <View style={styles.metaCol}>
+          <View style={styles.metaCard}>
             <Text style={styles.metaLabel}>IŠRAŠYMO DATA</Text>
             <Text style={styles.metaValue}>{data.issue_date}</Text>
           </View>
-          <View style={styles.metaCol}>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>{serviceMeta.label}</Text>
+            <Text style={styles.metaValue}>{serviceMeta.value}</Text>
+          </View>
+          <View style={styles.metaCard}>
             <Text style={styles.metaLabel}>APMOKĖJIMO TERMINAS</Text>
             <Text style={styles.metaValue}>{data.due_date}</Text>
-          </View>
-          <View style={styles.metaCol}>
-            <Text style={styles.metaLabel}>TIPAS</Text>
-            <Text style={styles.metaValue}>{data.invoice_type}</Text>
           </View>
         </View>
 
         <View style={styles.partiesRow}>
-          <View style={styles.partyCol}>
-            <Text style={styles.partyTitle}>PARDAVĖJAS</Text>
+          <View style={styles.partyCard}>
+            <View style={styles.partyTitleRow}>
+              <View style={styles.partyTitleAccent} />
+              <Text style={styles.partyTitle}>PARDAVĖJAS</Text>
+            </View>
             <Text style={[styles.partyLine, styles.partyBold]}>{data.seller_name}</Text>
             <Text style={styles.partyLine}>Įmonės kodas: {data.seller_code}</Text>
             <Text style={styles.partyLine}>{data.seller_address}</Text>
-            <Text style={styles.partyLine}>{data.seller_contact_line}</Text>
+            <Text style={styles.partyLine}>El. paštas: {sellerEmail || "—"}</Text>
+            <Text style={styles.partyLine}>Tel.: {sellerPhone || "—"}</Text>
             <Text style={styles.partyLine}>Banko sąskaita: {data.seller_bank_account}</Text>
           </View>
-          <View style={styles.partyCol}>
-            <Text style={styles.partyTitle}>PIRKĖJAS</Text>
+          <View style={styles.partyCard}>
+            <View style={styles.partyTitleRow}>
+              <View style={styles.partyTitleAccent} />
+              <Text style={styles.partyTitle}>PIRKĖJAS</Text>
+            </View>
             <Text style={[styles.partyLine, styles.partyBold]}>{data.buyer_name}</Text>
-            {buyerCodeLine ? <Text style={styles.partyLine}>{buyerCodeLine}</Text> : null}
+            {buyerIdLines.map((line, i) => (
+              <Text key={i} style={styles.partyLine}>
+                {line}
+              </Text>
+            ))}
             {data.buyer_address?.trim() ? (
               <Text style={styles.partyLine}>{data.buyer_address.trim()}</Text>
             ) : null}
@@ -228,11 +394,11 @@ export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
           </View>
         </View>
 
-        <View style={styles.tableHeader}>
+        <View style={styles.tableHeaderWrap}>
           <Text style={styles.thNr}>Nr.</Text>
           <Text style={styles.thDesc}>Paslaugos aprašymas</Text>
           <Text style={styles.thQty}>Kiekis</Text>
-          <Text style={styles.thPrice}>Kaina</Text>
+          <Text style={styles.thPrice}>Vieneto kaina</Text>
           <Text style={styles.thSum}>Suma</Text>
         </View>
         {data.line_items.map((row, i) => (
@@ -247,18 +413,34 @@ export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
           </View>
         ))}
 
-        <View style={styles.totals}>
-          <View style={styles.totalLine}>
-            <Text style={styles.totalLabel}>Suma be PVM:</Text>
-            <Text style={styles.totalValue}>{formatMoney(subtotal, data.currency)}</Text>
-          </View>
-          <View style={styles.totalLine}>
-            <Text style={styles.totalLabel}>PVM:</Text>
-            <Text style={[styles.totalValue, { fontWeight: 400 }]}>{data.vat_summary_line}</Text>
-          </View>
-          <View style={[styles.totalLine, styles.grandTotal]}>
-            <Text style={styles.totalLabel}>IŠ VISO:</Text>
-            <Text style={styles.totalValue}>{formatMoney(subtotal, data.currency)}</Text>
+        <View style={styles.totalsWrap}>
+          <View style={styles.totalsInner}>
+            {vatMode ? (
+              <>
+                <View style={styles.totalLine}>
+                  <Text style={styles.totalLabel}>Suma be PVM</Text>
+                  <Text style={styles.totalValue}>{formatMoney(subtotal, data.currency)}</Text>
+                </View>
+                <View style={styles.totalLine}>
+                  <Text style={styles.totalLabel}>PVM</Text>
+                  <Text style={[styles.totalValue, { fontWeight: 400 }]}>{data.vat_summary_line}</Text>
+                </View>
+                <View style={[styles.totalLine, styles.grandTotal]}>
+                  <Text style={styles.grandTotalLabel}>Iš viso</Text>
+                  <Text style={styles.grandTotalValue}>{formatMoney(subtotal, data.currency)}</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={[styles.totalLine, styles.grandTotal]}>
+                  <Text style={styles.grandTotalLabel}>Iš viso</Text>
+                  <Text style={styles.grandTotalValue}>{formatMoney(subtotal, data.currency)}</Text>
+                </View>
+                {data.vat_summary_line?.trim() ? (
+                  <Text style={styles.taxNote}>{data.vat_summary_line.trim()}</Text>
+                ) : null}
+              </>
+            )}
           </View>
         </View>
 
@@ -272,7 +454,9 @@ export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
             {data.seller_name} · Įmonės kodas: {data.seller_code} · {data.seller_address}
           </Text>
           <Text>
-            {data.seller_contact_line} · {data.seller_bank_account}
+            {sellerFooterContact}
+            {sellerFooterContact && data.seller_bank_account ? " · " : ""}
+            {data.seller_bank_account}
           </Text>
           <Text>
             {data.invoice_number} · {data.issue_date}

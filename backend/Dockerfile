@@ -13,6 +13,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY tsconfig.json ./
+COPY assets ./assets
 COPY src ./src
 
 RUN npm run build
@@ -26,6 +27,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/assets ./assets
 
 ENV PORT=3001
 EXPOSE 3001

@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
   for (const row of list) {
     const total = computeInvoiceSubtotal(row.line_items);
     let pdfInZip = "no";
-    let fileBase = safePdfFilename(row.invoice_number).replace(/\.pdf$/i, "");
+    const fileBase = safePdfFilename(row.invoice_number).replace(/\.pdf$/i, "");
     let uniqueName = fileBase;
     let n = 1;
     while (usedNames.has(uniqueName + ".pdf")) {

@@ -1,7 +1,28 @@
-import type { InvoiceLineItem, InvoicePayload } from "./types";
+import {
+  legacyBuyerCodeColumn,
+  normalizeBuyerCountry,
+  normalizeBuyerType,
+} from "./buyerIdentification";
+import type { DocumentType, InvoiceLineItem, InvoicePayload, TaxProfileSnapshot } from "./types";
 import { computeLineTotal } from "./types";
+import { formatSellerContactLine, splitCombinedSellerContactLine } from "./sellerContact";
+import { parseServiceTimingFromBody } from "./serviceTiming";
+import { FALLBACK_VAT_FOOTER_PRIMARY } from "./vatFooterFallback";
 
 const MAX_LEN = 8000;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+const DOCUMENT_TYPES: DocumentType[] = [
+  "sales_invoice",
+  "proforma_invoice",
+  "credit_note",
+  "debit_note",
+  "vat_invoice",
+];
+
+function isDocumentType(s: string): s is DocumentType {
+  return (DOCUMENT_TYPES as readonly string[]).includes(s);
+}
 
 function str(v: unknown, field: string): { ok: true; v: string } | { ok: false; error: string } {
   if (v === undefined || v === null) return { ok: true, v: "" };
@@ -18,10 +39,40 @@ function reqStr(v: unknown, field: string): { ok: true; v: string } | { ok: fals
   return r;
 }
 
+const PDF_TITLE: Record<DocumentType, string> = {
+  proforma_invoice: "IŠANKSTINĖ SĄSKAITA",
+  sales_invoice: "SĄSKAITA FAKTŪRA",
+  credit_note: "KREDITINĖ SĄSKAITA",
+  debit_note: "DEBETINĖ SĄSKAITA",
+  vat_invoice: "PVM SĄSKAITA FAKTŪRA",
+};
+
+const LABEL_LT: Record<DocumentType, string> = {
+  proforma_invoice: "Išankstinė sąskaita",
+  sales_invoice: "Sąskaita faktūra",
+  credit_note: "Kreditinė sąskaita",
+  debit_note: "Debetinė sąskaita",
+  vat_invoice: "PVM sąskaita faktūra",
+};
+
+function parseDocumentType(v: unknown): { ok: true; v: DocumentType } | { ok: false; error: string } {
+  if (v === undefined || v === null || v === "") return { ok: true, v: "sales_invoice" };
+  if (typeof v !== "string" || !isDocumentType(v)) return { ok: false, error: "document_type_invalid" };
+  return { ok: true, v };
+}
+
+function parseTaxSnapshot(
+  v: unknown
+): { ok: true; v: TaxProfileSnapshot } | { ok: false; error: string } {
+  if (v === undefined || v === null) return { ok: true, v: { type: "non_vat" } };
+  if (typeof v !== "object" || !v) return { ok: false, error: "tax_profile_snapshot_invalid" };
+  const t = (v as { type?: unknown }).type;
+  if (t === "non_vat" || t === "vat" || t === "vat_svs") return { ok: true, v: { type: t } };
+  return { ok: false, error: "tax_profile_snapshot_invalid" };
+}
+
 function parseLineItems(raw: unknown): { ok: true; items: InvoiceLineItem[] } | { ok: false; error: string } {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return { ok: false, error: "line_items_required" };
-  }
+  if (!Array.isArray(raw) || raw.length === 0) return { ok: false, error: "line_items_required" };
   const items: InvoiceLineItem[] = [];
   for (let i = 0; i < raw.length; i++) {
     const row = raw[i];
@@ -46,31 +97,88 @@ export function parseInvoicePayload(
   if (!body || typeof body !== "object") return { ok: false, error: "invalid_body" };
   const b = body as Record<string, unknown>;
 
+  const document_type = parseDocumentType(b.document_type);
+  if (!document_type.ok) return document_type;
+
   const invoice_number = reqStr(b.invoice_number, "invoice_number");
   if (!invoice_number.ok) return invoice_number;
   const issue_date = reqStr(b.issue_date, "issue_date");
   if (!issue_date.ok) return issue_date;
+  if (!ISO_DATE.test(issue_date.v)) return { ok: false, error: "issue_date_invalid" };
   const due_date = reqStr(b.due_date, "due_date");
   if (!due_date.ok) return due_date;
-  const document_title = reqStr(b.document_title, "document_title");
-  if (!document_title.ok) return document_title;
-  const invoice_type = reqStr(b.invoice_type, "invoice_type");
-  if (!invoice_type.ok) return invoice_type;
+  if (!ISO_DATE.test(due_date.v)) return { ok: false, error: "due_date_invalid" };
+
+  const timing = parseServiceTimingFromBody(b);
+  if (!timing.ok) return timing;
+
+  const docTitle = str(b.document_title, "document_title");
+  if (!docTitle.ok) return docTitle;
+  const invType = str(b.invoice_type, "invoice_type");
+  if (!invType.ok) return invType;
+
   const seller_name = reqStr(b.seller_name, "seller_name");
   if (!seller_name.ok) return seller_name;
   const seller_code = reqStr(b.seller_code, "seller_code");
   if (!seller_code.ok) return seller_code;
   const seller_address = reqStr(b.seller_address, "seller_address");
   if (!seller_address.ok) return seller_address;
-  const seller_contact_line = reqStr(b.seller_contact_line, "seller_contact_line");
-  if (!seller_contact_line.ok) return seller_contact_line;
+  const seller_email_raw = str(b.seller_email, "seller_email");
+  if (!seller_email_raw.ok) return seller_email_raw;
+  const seller_phone_raw = str(b.seller_phone, "seller_phone");
+  if (!seller_phone_raw.ok) return seller_phone_raw;
+  const seller_contact_line_raw = str(b.seller_contact_line, "seller_contact_line");
+  if (!seller_contact_line_raw.ok) return seller_contact_line_raw;
+
+  let seller_email = seller_email_raw.v;
+  let seller_phone = seller_phone_raw.v;
+  if (!seller_email && !seller_phone && seller_contact_line_raw.v) {
+    const split = splitCombinedSellerContactLine(seller_contact_line_raw.v);
+    seller_email = split.email;
+    seller_phone = split.phone;
+  }
+  const seller_contact_line = formatSellerContactLine(seller_email, seller_phone);
+  if (!seller_contact_line) {
+    return { ok: false, error: "seller_contact_required" };
+  }
+
   const seller_bank_account = reqStr(b.seller_bank_account, "seller_bank_account");
   if (!seller_bank_account.ok) return seller_bank_account;
   const buyer_name = reqStr(b.buyer_name, "buyer_name");
   if (!buyer_name.ok) return buyer_name;
 
-  const buyer_code = str(b.buyer_code, "buyer_code");
-  if (!buyer_code.ok) return buyer_code;
+  const buyer_code_raw = str(b.buyer_code, "buyer_code");
+  if (!buyer_code_raw.ok) return buyer_code_raw;
+
+  const buyer_country_raw = str(b.buyer_country, "buyer_country");
+  if (!buyer_country_raw.ok) return buyer_country_raw;
+  const buyer_country = normalizeBuyerCountry(buyer_country_raw.v || "LT");
+  const buyer_type = normalizeBuyerType(b.buyer_type);
+
+  let buyer_company_code = str(b.buyer_company_code, "buyer_company_code");
+  if (!buyer_company_code.ok) return buyer_company_code;
+  const buyer_registration_number = str(b.buyer_registration_number, "buyer_registration_number");
+  if (!buyer_registration_number.ok) return buyer_registration_number;
+  const buyer_vat_number = str(b.buyer_vat_number, "buyer_vat_number");
+  if (!buyer_vat_number.ok) return buyer_vat_number;
+
+  if (
+    buyer_type === "company" &&
+    buyer_country === "LT" &&
+    !buyer_company_code.v.trim() &&
+    buyer_code_raw.v.trim()
+  ) {
+    buyer_company_code = { ok: true, v: buyer_code_raw.v.trim() };
+  }
+
+  const buyer_code_computed =
+    legacyBuyerCodeColumn({
+      buyer_type,
+      buyer_country,
+      buyer_company_code: buyer_company_code.v,
+      buyer_registration_number: buyer_registration_number.v,
+    }) ?? "";
+
   const buyer_address = str(b.buyer_address, "buyer_address");
   if (!buyer_address.ok) return buyer_address;
   const buyer_contact = str(b.buyer_contact, "buyer_contact");
@@ -85,35 +193,59 @@ export function parseInvoicePayload(
   if (!notes.ok) return notes;
   const vat_summary_line = str(b.vat_summary_line, "vat_summary_line");
   if (!vat_summary_line.ok) return vat_summary_line;
-  const vat = vat_summary_line.v || "Neskaičiuojamas";
+  const vat = vat_summary_line.v || FALLBACK_VAT_FOOTER_PRIMARY;
+
+  const taxSnap = parseTaxSnapshot(b.tax_profile_snapshot);
+  if (!taxSnap.ok) return taxSnap;
 
   const lines = parseLineItems(b.line_items);
   if (!lines.ok) return lines;
 
   const id = typeof b.id === "string" && /^[0-9a-f-]{36}$/i.test(b.id) ? b.id : undefined;
+  const related =
+    typeof b.related_invoice_id === "string" && /^[0-9a-f-]{36}$/i.test(b.related_invoice_id)
+      ? b.related_invoice_id
+      : undefined;
+
+  const dt = document_type.v;
+  const document_title = docTitle.v || PDF_TITLE[dt];
+  const invoice_type = invType.v || LABEL_LT[dt];
 
   return {
     ok: true,
     data: {
       id,
+      document_type: dt,
       invoice_number: invoice_number.v,
       issue_date: issue_date.v,
+      service_date: timing.service_date,
+      service_period_from: timing.service_period_from,
+      service_period_to: timing.service_period_to,
       due_date: due_date.v,
-      document_title: document_title.v,
-      invoice_type: invoice_type.v,
+      document_title,
+      invoice_type,
       seller_name: seller_name.v,
       seller_code: seller_code.v,
       seller_address: seller_address.v,
-      seller_contact_line: seller_contact_line.v,
+      seller_email,
+      seller_phone,
+      seller_contact_line,
       seller_bank_account: seller_bank_account.v,
       buyer_name: buyer_name.v,
-      buyer_code: buyer_code.v,
+      buyer_country,
+      buyer_type,
+      buyer_company_code: buyer_company_code.v,
+      buyer_registration_number: buyer_registration_number.v,
+      buyer_vat_number: buyer_vat_number.v,
+      buyer_code: buyer_code_computed,
       buyer_address: buyer_address.v,
       buyer_contact: buyer_contact.v,
       currency,
       line_items: lines.items,
       notes: notes.v,
       vat_summary_line: vat,
+      tax_profile_snapshot: taxSnap.v,
+      related_invoice_id: related,
     },
   };
 }
