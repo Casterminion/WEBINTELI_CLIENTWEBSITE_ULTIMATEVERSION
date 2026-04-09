@@ -57,6 +57,9 @@ export type InvoicePayload = {
   /** Legacy single-column mirror for exports / older rows */
   buyer_code: string;
   buyer_address: string;
+  /** Buyer e-mail / phone (PDF); `buyer_contact` stays the combined legacy field. */
+  buyer_email: string;
+  buyer_phone: string;
   buyer_contact: string;
   currency: string;
   line_items: InvoiceLineItem[];
@@ -98,6 +101,8 @@ export type AdminInvoiceRow = {
   buyer_vat_number?: string | null;
   buyer_code: string | null;
   buyer_address: string | null;
+  buyer_email?: string | null;
+  buyer_phone?: string | null;
   buyer_contact: string | null;
   currency: string;
   line_items: InvoiceLineItem[];
@@ -197,6 +202,8 @@ export const WEBINTELI_INVOICE_DEFAULTS = {
   buyer_vat_number: "",
   buyer_code: "",
   buyer_address: "",
+  buyer_email: "",
+  buyer_phone: "",
   buyer_contact: "",
   currency: "EUR",
   vat_summary_line: "",
@@ -260,6 +267,13 @@ export function rowToPayload(row: AdminInvoiceRow): InvoicePayload {
       buyer_company_code,
       buyer_registration_number,
     }) ?? "";
+  const { email: buyer_email, phone: buyer_phone } = sellerEmailPhoneFromRow(
+    row.buyer_contact ?? "",
+    row.buyer_email,
+    row.buyer_phone
+  );
+  const buyer_contact =
+    formatSellerContactLine(buyer_email, buyer_phone) || (row.buyer_contact ?? "");
   return {
     id: row.id,
     document_type: docType,
@@ -286,7 +300,9 @@ export function rowToPayload(row: AdminInvoiceRow): InvoicePayload {
     buyer_vat_number,
     buyer_code,
     buyer_address: row.buyer_address ?? "",
-    buyer_contact: row.buyer_contact ?? "",
+    buyer_email,
+    buyer_phone,
+    buyer_contact,
     currency: row.currency,
     line_items: row.line_items,
     notes: row.notes ?? "",
@@ -313,5 +329,7 @@ export function syncDisplayFieldsFromDocumentType(payload: InvoicePayload): Invo
     document_title: getPdfTitle(payload.document_type),
     invoice_type: DOCUMENT_TYPE_LABEL_LT[payload.document_type],
     seller_contact_line: formatSellerContactLine(payload.seller_email, payload.seller_phone),
+    buyer_contact:
+      formatSellerContactLine(payload.buyer_email, payload.buyer_phone) || payload.buyer_contact.trim(),
   };
 }

@@ -1,5 +1,6 @@
 import { Document, Image, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import { formatSellerContactLine } from "./sellerContact";
+import { buyerPdfLabeledContacts } from "./buyerPdfContact";
+import { pdfNotesWithoutTaxSummaryDuplicates } from "./pdfInvoiceNotes";
 import { resolveInvoiceLogoPathForPdf } from "./invoiceLogoPath";
 import { buyerIdentificationPdfLines } from "./buyerIdentification";
 import { serviceTimingPdfMeta } from "./serviceTiming";
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
     padding: 12,
-    minHeight: 118,
+    minHeight: 128,
   },
   partyTitleRow: {
     flexDirection: "row",
@@ -195,13 +196,13 @@ const styles = StyleSheet.create({
   thSum: { width: "18%", fontSize: 7, fontWeight: 700, color: "#fff", textAlign: "right" },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
   tdNr: { width: "6%", fontSize: 9, color: INK_MUTED },
-  tdDesc: { width: "46%", fontSize: 9, paddingRight: 6, color: INK },
+  tdDesc: { width: "46%", fontSize: 9, paddingRight: 8, color: INK, lineHeight: 1.42 },
   tdQty: { width: "12%", fontSize: 9, textAlign: "right", color: INK },
   tdPrice: { width: "18%", fontSize: 9, textAlign: "right", color: INK },
   tdSum: { width: "18%", fontSize: 9, textAlign: "right", fontWeight: 700, color: INK },
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
     color: INK,
   },
   notesSection: {
-    marginTop: 18,
+    marginTop: 20,
     padding: 12,
     borderWidth: 1,
     borderColor: BORDER,
@@ -310,8 +311,8 @@ export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
   const serviceMeta = serviceTimingPdfMeta(data);
   const sellerEmail = data.seller_email?.trim() || "";
   const sellerPhone = data.seller_phone?.trim() || "";
-  const sellerFooterContact =
-    formatSellerContactLine(sellerEmail, sellerPhone) || data.seller_contact_line?.trim() || "";
+  const notesForPdf = pdfNotesWithoutTaxSummaryDuplicates(data.notes, data.vat_summary_line ?? "");
+  const buyerContacts = buyerPdfLabeledContacts(data);
 
   return (
     <Document>
@@ -328,8 +329,8 @@ export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
           </View>
           <View style={styles.headerContactCol}>
             <Text style={styles.headerContactLabel}>KONTAKTAI</Text>
-            <Text style={styles.headerContactLine}>{sellerEmail || "—"}</Text>
-            <Text style={styles.headerContactLine}>{sellerPhone || "—"}</Text>
+            <Text style={styles.headerContactLine}>El. paštas: {sellerEmail || "—"}</Text>
+            <Text style={styles.headerContactLine}>Tel.: {sellerPhone || "—"}</Text>
           </View>
         </View>
 
@@ -364,7 +365,7 @@ export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
             </View>
             <Text style={[styles.partyLine, styles.partyBold]}>{data.seller_name}</Text>
             <Text style={styles.partyLine}>Įmonės kodas: {data.seller_code}</Text>
-            <Text style={styles.partyLine}>{data.seller_address}</Text>
+            <Text style={styles.partyLine}>Adresas: {data.seller_address}</Text>
             <Text style={styles.partyLine}>El. paštas: {sellerEmail || "—"}</Text>
             <Text style={styles.partyLine}>Tel.: {sellerPhone || "—"}</Text>
             <Text style={styles.partyLine}>Banko sąskaita: {data.seller_bank_account}</Text>
@@ -381,11 +382,13 @@ export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
               </Text>
             ))}
             {data.buyer_address?.trim() ? (
-              <Text style={styles.partyLine}>{data.buyer_address.trim()}</Text>
+              <Text style={styles.partyLine}>Adresas: {data.buyer_address.trim()}</Text>
             ) : null}
-            {data.buyer_contact?.trim() ? (
-              <Text style={styles.partyLine}>{data.buyer_contact.trim()}</Text>
-            ) : null}
+            {buyerContacts.map((row, i) => (
+              <Text key={i} style={styles.partyLine}>
+                {row.label} {row.value}
+              </Text>
+            ))}
           </View>
         </View>
 
@@ -441,21 +444,16 @@ export function InvoicePdfDocument({ data }: { data: InvoicePayload }) {
 
         <View style={styles.notesSection}>
           <Text style={styles.notesTitle}>PASTABOS</Text>
-          <Text style={styles.notesBody}>{data.notes.trim() || "—"}</Text>
+          <Text style={styles.notesBody}>{notesForPdf || "—"}</Text>
         </View>
 
         <View style={styles.footer} fixed>
           <Text>
-            {data.seller_name} · Įmonės kodas: {data.seller_code} · {data.seller_address}
-          </Text>
-          <Text>
-            {sellerFooterContact}
-            {sellerFooterContact && data.seller_bank_account ? " · " : ""}
-            {data.seller_bank_account}
-          </Text>
-          <Text>
             {data.invoice_number} · {data.issue_date}
           </Text>
+          {data.seller_bank_account?.trim() ? (
+            <Text>Banko sąskaita: {data.seller_bank_account.trim()}</Text>
+          ) : null}
         </View>
       </Page>
     </Document>

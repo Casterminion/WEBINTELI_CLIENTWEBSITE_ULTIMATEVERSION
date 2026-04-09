@@ -40,14 +40,15 @@ describe("clampPercent", () => {
 });
 
 describe("sumIssuedSalesInvoiceTotalsEur", () => {
-  it("sums issued sales_invoice only", () => {
+  it("sums issued sales_invoice and vat_invoice; skips draft, cancelled, proforma", () => {
     const sum = sumIssuedSalesInvoiceTotalsEur([
       { total: 100, status: "issued", document_type: "sales_invoice" },
+      { total: 40, status: "issued", document_type: "vat_invoice" },
       { total: 50, status: "draft", document_type: "sales_invoice" },
-      { total: 999, status: "issued", document_type: "proforma" },
+      { total: 999, status: "issued", document_type: "proforma_invoice" },
       { total: 20, status: "cancelled", document_type: "sales_invoice" },
     ]);
-    expect(sum).toBe(100);
+    expect(sum).toBe(140);
   });
 
   it("handles zero state", () => {

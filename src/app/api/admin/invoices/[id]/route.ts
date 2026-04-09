@@ -4,6 +4,7 @@ import { parseInvoicePayload } from "@/lib/invoices/parsePayload";
 import { getSupabaseUserFromRequest } from "@/lib/invoices/supabaseUserFromRequest";
 import { assertVatInvoiceAllowed, ensureCompanyTaxSettings } from "@/lib/invoices/taxSettingsServer";
 import { buildDraftUpsertRow } from "@/lib/invoices/draftRow";
+import { formatSellerContactLine } from "@/lib/invoices/sellerContact";
 import type { AdminInvoiceRow } from "@/lib/invoices/types";
 import { syncDisplayFieldsFromDocumentType } from "@/lib/invoices/types";
 
@@ -53,13 +54,34 @@ export async function PATCH(request: NextRequest, context: Ctx) {
     const notes = typeof b.notes === "string" ? b.notes.trim() : undefined;
     const buyer_contact = typeof b.buyer_contact === "string" ? b.buyer_contact.trim() : undefined;
     const buyer_address = typeof b.buyer_address === "string" ? b.buyer_address.trim() : undefined;
-    if (notes === undefined && buyer_contact === undefined && buyer_address === undefined) {
+    const buyer_email = typeof b.buyer_email === "string" ? b.buyer_email.trim() : undefined;
+    const buyer_phone = typeof b.buyer_phone === "string" ? b.buyer_phone.trim() : undefined;
+    if (
+      notes === undefined &&
+      buyer_contact === undefined &&
+      buyer_address === undefined &&
+      buyer_email === undefined &&
+      buyer_phone === undefined
+    ) {
       return NextResponse.json({ error: "issued_patch_whitelist" }, { status: 400 });
     }
+    const invExt = inv as AdminInvoiceRow & { buyer_email?: string | null; buyer_phone?: string | null };
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (notes !== undefined) patch.notes = notes || null;
-    if (buyer_contact !== undefined) patch.buyer_contact = buyer_contact || null;
     if (buyer_address !== undefined) patch.buyer_address = buyer_address || null;
+    if (buyer_email !== undefined) patch.buyer_email = buyer_email || null;
+    if (buyer_phone !== undefined) patch.buyer_phone = buyer_phone || null;
+
+    const nextEmail =
+      buyer_email !== undefined ? buyer_email : String(invExt.buyer_email ?? "").trim();
+    const nextPhone =
+      buyer_phone !== undefined ? buyer_phone : String(invExt.buyer_phone ?? "").trim();
+
+    if (buyer_email !== undefined || buyer_phone !== undefined) {
+      patch.buyer_contact = formatSellerContactLine(nextEmail, nextPhone) || null;
+    } else if (buyer_contact !== undefined) {
+      patch.buyer_contact = buyer_contact || null;
+    }
 
     const { error: upErr } = await supabase.from("admin_invoices").update(patch).eq("id", invoiceId).eq("user_id", user.id);
     if (upErr) {

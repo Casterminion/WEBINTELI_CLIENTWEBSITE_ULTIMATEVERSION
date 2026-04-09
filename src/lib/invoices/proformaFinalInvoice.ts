@@ -1,5 +1,5 @@
 import { normalizeBuyerCountry, normalizeBuyerType } from "./buyerIdentification";
-import { formatSellerContactLine } from "./sellerContact";
+import { formatSellerContactLine, splitCombinedSellerContactLine } from "./sellerContact";
 import type { AdminInvoiceRow, InvoicePayload } from "./types";
 
 /**
@@ -39,6 +39,8 @@ export function applyIssuedPartySnapshotsFromRow(row: AdminInvoiceRow, payload: 
     const b = bj as Record<string, unknown>;
     if (typeof b.buyer_name === "string") out.buyer_name = b.buyer_name;
     if (typeof b.buyer_address === "string") out.buyer_address = b.buyer_address;
+    if (typeof b.buyer_email === "string") out.buyer_email = b.buyer_email;
+    if (typeof b.buyer_phone === "string") out.buyer_phone = b.buyer_phone;
     if (typeof b.buyer_contact === "string") out.buyer_contact = b.buyer_contact;
     if (typeof b.buyer_company_code === "string") out.buyer_company_code = b.buyer_company_code;
     if (typeof b.buyer_registration_number === "string") out.buyer_registration_number = b.buyer_registration_number;
@@ -48,6 +50,11 @@ export function applyIssuedPartySnapshotsFromRow(row: AdminInvoiceRow, payload: 
       out.buyer_type = normalizeBuyerType(b.buyer_type);
     }
     if (typeof b.buyer_code === "string") out.buyer_code = b.buyer_code;
+    if (!out.buyer_email?.trim() && !out.buyer_phone?.trim() && out.buyer_contact?.trim()) {
+      const sp = splitCombinedSellerContactLine(out.buyer_contact);
+      if (sp.email) out.buyer_email = sp.email;
+      if (sp.phone) out.buyer_phone = sp.phone;
+    }
   }
 
   return out;

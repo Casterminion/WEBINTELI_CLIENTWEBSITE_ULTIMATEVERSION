@@ -168,8 +168,21 @@ export function parseInvoicePayload(
 
   const buyer_address = str(b.buyer_address, "buyer_address");
   if (!buyer_address.ok) return buyer_address;
-  const buyer_contact = str(b.buyer_contact, "buyer_contact");
-  if (!buyer_contact.ok) return buyer_contact;
+  const buyer_email_raw = str(b.buyer_email, "buyer_email");
+  if (!buyer_email_raw.ok) return buyer_email_raw;
+  const buyer_phone_raw = str(b.buyer_phone, "buyer_phone");
+  if (!buyer_phone_raw.ok) return buyer_phone_raw;
+  const buyer_contact_raw = str(b.buyer_contact, "buyer_contact");
+  if (!buyer_contact_raw.ok) return buyer_contact_raw;
+
+  let buyer_email = buyer_email_raw.v;
+  let buyer_phone = buyer_phone_raw.v;
+  if (!buyer_email && !buyer_phone && buyer_contact_raw.v) {
+    const split = splitCombinedSellerContactLine(buyer_contact_raw.v);
+    buyer_email = split.email;
+    buyer_phone = split.phone;
+  }
+  const buyer_contact = formatSellerContactLine(buyer_email, buyer_phone) || buyer_contact_raw.v;
 
   const currencyRaw = str(b.currency, "currency");
   if (!currencyRaw.ok) return currencyRaw;
@@ -243,7 +256,9 @@ export function parseInvoicePayload(
       buyer_vat_number: buyer_vat_number.v,
       buyer_code: buyer_code_computed,
       buyer_address: buyer_address.v,
-      buyer_contact: buyer_contact.v,
+      buyer_email,
+      buyer_phone,
+      buyer_contact,
       currency,
       line_items: lines.items,
       notes: notes.v,

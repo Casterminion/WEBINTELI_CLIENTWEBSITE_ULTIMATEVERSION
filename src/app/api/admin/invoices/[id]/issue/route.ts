@@ -10,6 +10,7 @@ import { safePdfFilename, getSupabaseUserFromRequest } from "@/lib/invoices/supa
 import { assertVatInvoiceAllowed, ensureCompanyTaxSettings } from "@/lib/invoices/taxSettingsServer";
 import type { AdminInvoiceRow } from "@/lib/invoices/types";
 import { parseServiceTimingFromBody } from "@/lib/invoices/serviceTiming";
+import { formatSellerContactLine } from "@/lib/invoices/sellerContact";
 import { rowToPayload } from "@/lib/invoices/types";
 
 export const runtime = "nodejs";
@@ -138,6 +139,9 @@ export async function POST(request: NextRequest, context: Ctx) {
     buyer_registration_number?: string | null;
     buyer_vat_number?: string | null;
   };
+  const invBuyer = inv as AdminInvoiceRow & { buyer_email?: string | null; buyer_phone?: string | null };
+  const snapEmail = invBuyer.buyer_email?.trim() ?? "";
+  const snapPhone = invBuyer.buyer_phone?.trim() ?? "";
   const buyer_snapshot_json = {
     buyer_name: inv.buyer_name,
     buyer_code: inv.buyer_code,
@@ -147,7 +151,9 @@ export async function POST(request: NextRequest, context: Ctx) {
     buyer_registration_number: invFull.buyer_registration_number ?? null,
     buyer_vat_number: invFull.buyer_vat_number ?? null,
     buyer_address: inv.buyer_address,
-    buyer_contact: inv.buyer_contact,
+    buyer_email: snapEmail || null,
+    buyer_phone: snapPhone || null,
+    buyer_contact: formatSellerContactLine(snapEmail, snapPhone) || inv.buyer_contact,
   };
 
   const { error: upErr } = await supabase

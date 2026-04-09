@@ -43,6 +43,8 @@ export type InvoicePayload = {
   buyer_vat_number?: string;
   buyer_code: string;
   buyer_address: string;
+  buyer_email: string;
+  buyer_phone: string;
   buyer_contact: string;
   currency: string;
   line_items: InvoiceLineItem[];

@@ -202,13 +202,6 @@ export default function SaskaitosSarasasPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/admin/buhalterija/nustatymai"
-            className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium"
-            style={{ borderColor: "var(--admin-border)", color: "var(--admin-accent)" }}
-          >
-            {a?.companySettingsNav ?? "Įmonės nustatymai"}
-          </Link>
-          <Link
             href="/admin/buhalterija/saskaitos/nauja"
             className="inline-flex items-center rounded-md px-4 py-2 text-sm font-medium text-white"
             style={{ background: "var(--admin-accent)" }}

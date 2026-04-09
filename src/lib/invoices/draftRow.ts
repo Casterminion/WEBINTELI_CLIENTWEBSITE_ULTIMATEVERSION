@@ -69,6 +69,8 @@ export function buildDraftUpsertRow(
     buyer_vat_number,
     buyer_code,
     buyer_address: synced.buyer_address.trim() ? synced.buyer_address.trim() : null,
+    buyer_email: synced.buyer_email.trim() ? synced.buyer_email.trim() : null,
+    buyer_phone: synced.buyer_phone.trim() ? synced.buyer_phone.trim() : null,
     buyer_contact: synced.buyer_contact.trim() ? synced.buyer_contact.trim() : null,
     currency: synced.currency,
     line_items: synced.line_items,

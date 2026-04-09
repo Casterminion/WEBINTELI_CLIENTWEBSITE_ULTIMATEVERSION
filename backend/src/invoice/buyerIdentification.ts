@@ -40,7 +40,7 @@ export function buyerIdentificationPdfLines(data: InvoicePayload): string[] {
     const reg = data.buyer_registration_number?.trim();
     const vat = data.buyer_vat_number?.trim();
     if (c === "LT" && comp) lines.push(`Įmonės kodas: ${comp}`);
-    if (c !== "LT" && reg) lines.push(`Registracijos Nr.: ${reg}`);
+    if (c !== "LT" && reg) lines.push(`Registracijos numeris: ${reg}`);
     if (vat) lines.push(`PVM mokėtojo kodas: ${vat}`);
   }
   const leg = data.buyer_code?.trim();

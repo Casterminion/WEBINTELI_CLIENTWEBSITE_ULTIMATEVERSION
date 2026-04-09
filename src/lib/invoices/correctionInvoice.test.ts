@@ -87,6 +87,10 @@ describe("parseInvoicePayload correction rules", () => {
     buyer_registration_number: "",
     buyer_vat_number: "",
     buyer_code: "1",
+    buyer_address: "",
+    buyer_email: "",
+    buyer_phone: "",
+    buyer_contact: "",
     line_items: lineOk,
     document_type: "credit_note",
   };

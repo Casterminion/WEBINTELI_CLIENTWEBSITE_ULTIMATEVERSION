@@ -32,6 +32,8 @@ function testPayload(): InvoicePayload {
     buyer_vat_number: "",
     buyer_code: "111",
     buyer_address: "",
+    buyer_email: "",
+    buyer_phone: "",
     buyer_contact: "",
     currency: "EUR",
     line_items: [],
@@ -139,6 +141,8 @@ describe("applyIssuedPartySnapshotsFromRow", () => {
         buyer_country: "DE",
         buyer_type: "company",
         buyer_company_code: "DE123",
+        buyer_email: "snap@example.com",
+        buyer_phone: "+49123",
       },
     } as unknown as AdminInvoiceRow;
     const out = applyIssuedPartySnapshotsFromRow(row, testPayload());
@@ -148,5 +152,7 @@ describe("applyIssuedPartySnapshotsFromRow", () => {
     expect(out.buyer_name).toBe("Snap Client");
     expect(out.buyer_country).toBe("DE");
     expect(out.buyer_company_code).toBe("DE123");
+    expect(out.buyer_email).toBe("snap@example.com");
+    expect(out.buyer_phone).toBe("+49123");
   });
 });

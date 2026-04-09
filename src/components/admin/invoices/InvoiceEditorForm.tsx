@@ -41,6 +41,8 @@ type Props = {
   hideCorrectionDocumentTypes?: boolean;
   /** Lock document type (e.g. correction drafts linked to an original invoice) */
   lockDocumentType?: boolean;
+  /** Hide seller block (name, code, currency, address, contacts, bank) — e.g. new invoice when data comes from Buhalterija settings */
+  hideSellerSection?: boolean;
 };
 
 function inputCls() {
@@ -77,6 +79,7 @@ export function InvoiceEditorForm({
   readOnly,
   hideCorrectionDocumentTypes,
   lockDocumentType,
+  hideSellerSection,
 }: Props) {
   const { t } = useLanguage();
   const a = t.admin as Labels;
@@ -94,6 +97,16 @@ export function InvoiceEditorForm({
       ...value,
       ...partial,
       seller_contact_line: formatSellerContactLine(email, phone),
+    });
+  };
+
+  const patchBuyerContact = (partial: Partial<Pick<InvoicePayload, "buyer_email" | "buyer_phone">>) => {
+    const email = partial.buyer_email !== undefined ? partial.buyer_email : value.buyer_email;
+    const phone = partial.buyer_phone !== undefined ? partial.buyer_phone : value.buyer_phone;
+    onChange({
+      ...value,
+      ...partial,
+      buyer_contact: formatSellerContactLine(email, phone),
     });
   };
 
@@ -374,98 +387,100 @@ export function InvoiceEditorForm({
         </div>
       </div>
 
-      <section
-        className="rounded-lg border p-4 space-y-3"
-        style={{ borderColor: "var(--admin-border)" }}
-      >
-        <h2 className="text-sm font-semibold" style={{ color: "var(--admin-text)" }}>
-          {lab("buhalterijaSeller", "Seller")}
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
-              {lab("buhalterijaSellerName", "Pardavėjo pavadinimas")}
-            </label>
-            <input
-              {...ro}
-              style={fieldStyle}
-              value={value.seller_name}
-              onChange={(e) => patch({ seller_name: e.target.value })}
-            />
+      {!hideSellerSection ? (
+        <section
+          className="rounded-lg border p-4 space-y-3"
+          style={{ borderColor: "var(--admin-border)" }}
+        >
+          <h2 className="text-sm font-semibold" style={{ color: "var(--admin-text)" }}>
+            {lab("buhalterijaSeller", "Seller")}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                {lab("buhalterijaSellerName", "Pardavėjo pavadinimas")}
+              </label>
+              <input
+                {...ro}
+                style={fieldStyle}
+                value={value.seller_name}
+                onChange={(e) => patch({ seller_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                {lab("buhalterijaCompanyCode", "Company code")}
+              </label>
+              <input
+                {...ro}
+                style={fieldStyle}
+                value={value.seller_code}
+                onChange={(e) => patch({ seller_code: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                {lab("buhalterijaCurrency", "Currency")}
+              </label>
+              <input
+                {...ro}
+                style={fieldStyle}
+                value={value.currency}
+                onChange={(e) => patch({ currency: e.target.value.toUpperCase().slice(0, 3) })}
+                maxLength={3}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                {lab("buhalterijaAddress", "Address")}
+              </label>
+              <input
+                {...ro}
+                style={fieldStyle}
+                value={value.seller_address}
+                onChange={(e) => patch({ seller_address: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                {lab("buhalterijaSellerEmail", "Email")}
+              </label>
+              <input
+                type="email"
+                autoComplete="email"
+                {...ro}
+                style={fieldStyle}
+                value={value.seller_email}
+                onChange={(e) => patchSellerContact({ seller_email: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                {lab("buhalterijaSellerPhone", "Phone")}
+              </label>
+              <input
+                type="tel"
+                autoComplete="tel"
+                {...ro}
+                style={fieldStyle}
+                value={value.seller_phone}
+                onChange={(e) => patchSellerContact({ seller_phone: e.target.value })}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
+                {lab("buhalterijaBankAccount", "Bank account")}
+              </label>
+              <input
+                {...ro}
+                style={fieldStyle}
+                value={value.seller_bank_account}
+                onChange={(e) => patch({ seller_bank_account: e.target.value })}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
-              {lab("buhalterijaCompanyCode", "Company code")}
-            </label>
-            <input
-              {...ro}
-              style={fieldStyle}
-              value={value.seller_code}
-              onChange={(e) => patch({ seller_code: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
-              {lab("buhalterijaCurrency", "Currency")}
-            </label>
-            <input
-              {...ro}
-              style={fieldStyle}
-              value={value.currency}
-              onChange={(e) => patch({ currency: e.target.value.toUpperCase().slice(0, 3) })}
-              maxLength={3}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
-              {lab("buhalterijaAddress", "Address")}
-            </label>
-            <input
-              {...ro}
-              style={fieldStyle}
-              value={value.seller_address}
-              onChange={(e) => patch({ seller_address: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
-              {lab("buhalterijaSellerEmail", "Email")}
-            </label>
-            <input
-              type="email"
-              autoComplete="email"
-              {...ro}
-              style={fieldStyle}
-              value={value.seller_email}
-              onChange={(e) => patchSellerContact({ seller_email: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
-              {lab("buhalterijaSellerPhone", "Phone")}
-            </label>
-            <input
-              type="tel"
-              autoComplete="tel"
-              {...ro}
-              style={fieldStyle}
-              value={value.seller_phone}
-              onChange={(e) => patchSellerContact({ seller_phone: e.target.value })}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
-              {lab("buhalterijaBankAccount", "Bank account")}
-            </label>
-            <input
-              {...ro}
-              style={fieldStyle}
-              value={value.seller_bank_account}
-              onChange={(e) => patch({ seller_bank_account: e.target.value })}
-            />
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section
         className="rounded-lg border p-4 space-y-3"
@@ -585,15 +600,30 @@ export function InvoiceEditorForm({
               onChange={(e) => patch({ buyer_address: e.target.value })}
             />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
-              {lab("buhalterijaContactLine", "Contact")}
+              {lab("buhalterijaBuyerEmail", "Buyer e-mail")}
             </label>
             <input
+              type="email"
+              autoComplete="email"
               {...ro}
               style={fieldStyle}
-              value={value.buyer_contact}
-              onChange={(e) => patch({ buyer_contact: e.target.value })}
+              value={value.buyer_email}
+              onChange={(e) => patchBuyerContact({ buyer_email: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: "var(--admin-text-muted)" }}>
+              {lab("buhalterijaBuyerPhone", "Buyer phone")}
+            </label>
+            <input
+              type="tel"
+              autoComplete="tel"
+              {...ro}
+              style={fieldStyle}
+              value={value.buyer_phone}
+              onChange={(e) => patchBuyerContact({ buyer_phone: e.target.value })}
             />
           </div>
         </div>
@@ -605,7 +635,7 @@ export function InvoiceEditorForm({
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold" style={{ color: "var(--admin-text)" }}>
-            {lab("buhalterijaLines", "Lines")}
+            {lab("buhalterijaLines", "Services")}
           </h2>
           {!readOnly ? (
             <button

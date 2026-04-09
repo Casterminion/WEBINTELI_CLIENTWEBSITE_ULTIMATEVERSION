@@ -19,8 +19,14 @@ export function clampPercent(n: number): number {
   return Math.max(0, Math.min(100, n));
 }
 
+/** Sales (SF) and VAT invoices (PVM SF) count toward informal 45k-style turnover; proforma/corrections do not. Legacy rows with no type are included. */
+export function countsTowardVatRegistrationTurnoverEur(documentType: string | null | undefined): boolean {
+  if (documentType == null || documentType === "") return true;
+  return documentType === "sales_invoice" || documentType === "vat_invoice";
+}
+
 /**
- * Sum issued sales_invoice totals (excludes draft & cancelled).
+ * Sum issued sales + VAT invoice totals (excludes draft & cancelled).
  * Caller should filter by calendar year via query; rows are expected pre-filtered.
  */
 export function sumIssuedSalesInvoiceTotalsEur(
@@ -28,7 +34,7 @@ export function sumIssuedSalesInvoiceTotalsEur(
 ): number {
   let sum = 0;
   for (const r of rows) {
-    if (r.document_type && r.document_type !== "sales_invoice") continue;
+    if (!countsTowardVatRegistrationTurnoverEur(r.document_type)) continue;
     if (r.status === "draft" || r.status === "cancelled") continue;
     sum += Number(r.total) || 0;
   }
@@ -43,7 +49,7 @@ export function sumIssuedInMonthEur(
   let sum = 0;
   const ym = `${year}-${String(monthIndex0 + 1).padStart(2, "0")}`;
   for (const r of rows) {
-    if (r.document_type && r.document_type !== "sales_invoice") continue;
+    if (!countsTowardVatRegistrationTurnoverEur(r.document_type)) continue;
     if (r.status === "draft" || r.status === "cancelled") continue;
     const id = String(r.issue_date ?? "").slice(0, 7);
     if (id !== ym) continue;

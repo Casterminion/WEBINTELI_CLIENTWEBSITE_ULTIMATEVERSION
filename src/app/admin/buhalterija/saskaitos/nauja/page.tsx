@@ -330,6 +330,7 @@ export default function NaujaSaskaitaPage() {
           value={data}
           onChange={setData}
           hideCorrectionDocumentTypes
+          hideSellerSection
           invoiceNumberLoading={invoiceNumberLoading}
           taxSettings={taxFormProps}
         />
